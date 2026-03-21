@@ -25,6 +25,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from config import Config
 from utils import Formatters
 from engine import MeeusEngine
+from constellations import ETOILES_SUPPLEMENTAIRES, CONSTELLATIONS, ETOILE_CONSTELLATION
 
 # Intervalle de rafraîchissement du mode temps réel (millisecondes)
 _INTERVALLE_LIVE_MS = 2000
@@ -70,6 +71,7 @@ _ETOILES = {
     "Phécda":      (11.8966,  53.6948,  2.44),
     "Polaris":     ( 2.5303,  89.2641,  1.97),
 }
+_ETOILES.update(ETOILES_SUPPLEMENTAIRES)
 
 
 class AstroApp:
@@ -96,6 +98,9 @@ class AstroApp:
         self.utc_offset = 0
         self.favoris = self._charger_favoris()
         self.etoiles_visibles = []
+        self._soleil_data = {}
+        self._lune_data = {}
+        self._popup_detail = None
         self.planet_labels = {}    # rempli par setup_ui → onglet Planètes
 
         self.setup_ui()
@@ -333,6 +338,7 @@ class AstroApp:
             color="white", zorder=10, fontfamily="monospace", fontsize=8)
         self.annot2.set_visible(False)
         self.canvas2.mpl_connect("motion_notify_event", self.on_hover)
+        self.canvas2.mpl_connect("button_press_event", self._on_click_carte)
 
         # ── Onglet 4 : Planètes ───────────────────────────────────────
         tab_pl = tabs.add("🪐  Planètes")
@@ -652,6 +658,107 @@ class AstroApp:
         if c2:
             self.canvas2.draw_idle()
 
+    def _on_click_carte(self, event):
+        """Clic sur la carte du ciel — ouvre le popup de détail."""
+        if event.inaxes != self.ax2 or event.xdata is None:
+            return
+
+        xm = event.ydata * math.cos(event.xdata)
+        ym = event.ydata * math.sin(event.xdata)
+
+        best, bd = None, float('inf')
+        for item in self.etoiles_visibles:
+            _, _, az, r, _, _ = item
+            d = math.hypot(xm - r * math.cos(az), ym - r * math.sin(az))
+            if d < bd:
+                bd, best = d, item
+
+        best_type = "etoile"
+        for obj in (self._soleil_data, self._lune_data):
+            if obj and obj.get('alt', -90) > 0:
+                az_r = math.radians(obj['az'])
+                r = 90 - obj['alt']
+                d = math.hypot(xm - r * math.cos(az_r), ym - r * math.sin(az_r))
+                if d < bd:
+                    bd, best, best_type = d, obj, "astre"
+
+        if bd > 10:
+            return
+
+        if best_type == "etoile" and isinstance(best, tuple):
+            nom, mag, _, _, alt, azd = best
+            ra_h, dec_d, _ = _ETOILES[nom]
+            consts = ETOILE_CONSTELLATION.get(nom, [])
+            self._afficher_detail_objet(
+                nom=nom, icone="★",
+                ra=ra_h, dec=dec_d, alt=alt, az=azd, mag=mag,
+                constellation=", ".join(consts) if consts else "—")
+        elif best_type == "astre" and isinstance(best, dict):
+            icone = "☀" if best['nom'] == "Soleil" else "☾"
+            self._afficher_detail_objet(
+                nom=best['nom'], icone=icone,
+                ra=best.get('ra'), dec=best.get('dec'),
+                alt=best['alt'], az=best['az'], mag=None,
+                constellation=None, extra=best)
+
+    def _afficher_detail_objet(self, nom, icone, ra, dec, alt, az, mag,
+                                constellation, extra=None):
+        """Affiche un popup CTkToplevel avec les détails d'un objet céleste."""
+        if self._popup_detail is not None:
+            try:
+                self._popup_detail.destroy()
+            except Exception:
+                pass
+
+        popup = ctk.CTkToplevel(self.root)
+        popup.title(f"Détails — {nom}")
+        popup.geometry("320x300")
+        popup.configure(fg_color=Config.BG_PANEL)
+        popup.attributes('-topmost', True)
+        popup.resizable(False, False)
+        self._popup_detail = popup
+
+        ctk.CTkLabel(popup, text=f"{icone}  {nom}",
+                     font=ctk.CTkFont(size=18, weight="bold"),
+                     text_color=Config.FG_WHITE).pack(pady=(12, 4))
+
+        frame = ctk.CTkFrame(popup, fg_color=Config.BG_MAIN, corner_radius=8)
+        frame.pack(fill=tk.BOTH, expand=True, padx=12, pady=8)
+
+        infos = []
+        if constellation:
+            infos.append(("Constellation", constellation))
+        if ra is not None:
+            infos.append(("Asc. Droite", Formatters.hms(ra)))
+        if dec is not None:
+            infos.append(("Déclinaison", Formatters.dms(dec)))
+        infos.append(("Altitude", f"{alt:+.2f}°"))
+        infos.append(("Azimut", f"{az:.2f}°"))
+        if mag is not None:
+            infos.append(("Magnitude", f"{mag:+.2f}"))
+        if alt > 0:
+            infos.append(("Visibilité", "Au-dessus de l'horizon"))
+        if extra and 'illum' in extra:
+            infos.append(("Illumination", f"{extra['illum']:.1f} %"))
+            infos.append(("Phase", Formatters.phase_lune(
+                extra['illum'], extra['phase'])))
+
+        for label, value in infos:
+            row = ctk.CTkFrame(frame, fg_color="transparent")
+            row.pack(fill=tk.X, padx=8, pady=2)
+            ctk.CTkLabel(row, text=f"{label} :",
+                         text_color=Config.FG_LABEL,
+                         font=ctk.CTkFont(size=11),
+                         anchor="w", width=120).pack(side=tk.LEFT)
+            ctk.CTkLabel(row, text=str(value),
+                         text_color=Config.FG_WHITE,
+                         font=ctk.CTkFont(size=11, weight="bold"),
+                         anchor="w").pack(side=tk.LEFT)
+
+        ctk.CTkButton(popup, text="Fermer", command=popup.destroy,
+                      fg_color=Config.BTN_COLOR, width=100,
+                      height=28).pack(pady=(4, 10))
+
     def geolocaliser(self):
         """Détecte la position via ip-api.com et remplit lat/lon."""
         try:
@@ -727,6 +834,12 @@ class AstroApp:
 
         phase   = MeeusEngine.mod360(m_l - s_l)
         illum   = (1 - math.cos(math.radians(phase))) / 2.0 * 100.0
+
+        self._soleil_data = {'nom': 'Soleil', 'ra': s_ra, 'dec': s_dec,
+                             'alt': s_alt, 'az': s_az}
+        self._lune_data = {'nom': 'Lune', 'ra': m_ra, 'dec': m_dec,
+                           'alt': m_alt_c, 'az': m_az,
+                           'illum': illum, 'phase': phase}
 
         # Cache événements journaliers
         key = f"{dte.strftime('%Y-%m-%d')}_{lat:.2f}_{lon:.2f}"
@@ -925,6 +1038,29 @@ class AstroApp:
                         textcoords="offset points",
                         fontsize=7, color="#A0B8D8", zorder=3)
                 self.etoiles_visibles.append((nom, mag, az_rad, r, e_alt, e_az))
+
+        # ── Lignes de constellations ─────────────────────────────────
+        pos_etoiles = {nom: (az_rad, r)
+                       for nom, _, az_rad, r, _, _ in self.etoiles_visibles}
+        for nom_const, aretes in CONSTELLATIONS.items():
+            pts = []
+            for ea, eb in aretes:
+                if ea in pos_etoiles and eb in pos_etoiles:
+                    az_a, r_a = pos_etoiles[ea]
+                    az_b, r_b = pos_etoiles[eb]
+                    self.ax2.plot([az_a, az_b], [r_a, r_b],
+                                 color="#4A5568", linewidth=0.8,
+                                 alpha=0.45, zorder=1)
+                    pts.extend([(az_a, r_a), (az_b, r_b)])
+            if len(pts) >= 4:
+                xs = [r * math.cos(az) for az, r in pts]
+                ys = [r * math.sin(az) for az, r in pts]
+                cx, cy = sum(xs) / len(xs), sum(ys) / len(ys)
+                c_az = math.atan2(cy, cx)
+                c_r = math.hypot(cx, cy)
+                self.ax2.annotate(nom_const, xy=(c_az, c_r),
+                                  fontsize=6, color="#6B7280", alpha=0.7,
+                                  ha="center", va="center", zorder=1)
 
         if s_alt > 0:
             self.ax2.plot(math.radians(s_az), 90 - s_alt, "o",
