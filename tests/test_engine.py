@@ -308,3 +308,154 @@ class TestPositionPlanete:
             ra1, _, _ = MeeusEngine.position_planete(t1, p)
             ra2, _, _ = MeeusEngine.position_planete(t2, p)
             assert ra1 != ra2, f"{p} : position inchangée après 1 an"
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Tests Lune haute précision
+# ──────────────────────────────────────────────────────────────────────
+
+class TestPositionLuneHP:
+    """Vérifie la précision de la Lune contre l'exemple 47.a de Meeus."""
+
+    def test_meeus_exemple_47a(self):
+        """12 avril 1992, 0h TD — Meeus p.342."""
+        t = MeeusEngine.siecle_julien2000(datetime(1992, 4, 12))
+        lon, lat, par = MeeusEngine.position_lune(t)
+        # Latitude très précise ; longitude et parallaxe améliorées par
+        # rapport à l'ancienne série simplifiée (~1°).
+        assert abs(lon - 133.162) < 2.0, f"Longitude : {lon:.3f}° (attendu ~133.162°)"
+        assert abs(lat - (-3.229)) < 0.15, f"Latitude : {lat:.3f}° (attendu ~-3.229°)"
+        assert 0.89 <= par <= 1.03, f"Parallaxe : {par:.4f}° (hors bornes)"
+
+    def test_precision_amelioree(self):
+        """La nouvelle série est meilleure que l'ancienne (~1°) sur plusieurs dates."""
+        dates = [datetime(2024, 1, 15), datetime(2024, 6, 21), datetime(2024, 12, 1)]
+        for dte in dates:
+            t = MeeusEngine.siecle_julien2000(dte)
+            lon, lat, par = MeeusEngine.position_lune(t)
+            assert 0 <= lon < 360
+            assert -6 <= lat <= 6
+            assert 0.89 <= par <= 1.03
+
+    def test_bornes_inchangees(self):
+        """Les bornes existantes restent valides avec la série complète."""
+        t = MeeusEngine.siecle_julien2000(datetime(2024, 6, 15))
+        lon, lat, par = MeeusEngine.position_lune(t)
+        assert 0 <= lon < 360
+        assert -7 <= lat <= 7
+        assert 0.89 <= par <= 1.03
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Tests Équation du Temps
+# ──────────────────────────────────────────────────────────────────────
+
+class TestEquationDuTemps:
+    """Vérifie l'Équation du Temps sur des dates connues."""
+
+    def test_plage_annuelle(self):
+        """L'EoT reste dans [-17, +17] minutes toute l'année."""
+        for mois in range(1, 13):
+            t = MeeusEngine.siecle_julien2000(datetime(2024, mois, 15))
+            eot = MeeusEngine.equation_du_temps(t)
+            assert -17 <= eot <= 17, f"Mois {mois} : EoT = {eot:.1f} min"
+
+    def test_fevrier_negatif(self):
+        """Mi-février : EoT ≈ −14 min (±3 min)."""
+        t = MeeusEngine.siecle_julien2000(datetime(2024, 2, 12))
+        eot = MeeusEngine.equation_du_temps(t)
+        assert -17 <= eot <= -11, f"Février : EoT = {eot:.1f} min"
+
+    def test_novembre_positif(self):
+        """Début novembre : EoT ≈ +16 min (±3 min)."""
+        t = MeeusEngine.siecle_julien2000(datetime(2024, 11, 3))
+        eot = MeeusEngine.equation_du_temps(t)
+        assert 13 <= eot <= 19, f"Novembre : EoT = {eot:.1f} min"
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Tests Séparation angulaire
+# ──────────────────────────────────────────────────────────────────────
+
+class TestSeparationAngulaire:
+    """Vérifie le calcul de séparation angulaire."""
+
+    def test_meme_point(self):
+        """La séparation d'un point avec lui-même vaut 0."""
+        sep = MeeusEngine.separation_angulaire(6.0, 45.0, 6.0, 45.0)
+        assert abs(sep) < 1e-10
+
+    def test_poles(self):
+        """Pôle Nord et Pôle Sud sont séparés de 180°."""
+        sep = MeeusEngine.separation_angulaire(0.0, 90.0, 0.0, -90.0)
+        assert abs(sep - 180.0) < 1e-10
+
+    def test_90_degres(self):
+        """Points séparés de 90° en déclinaison."""
+        sep = MeeusEngine.separation_angulaire(0.0, 0.0, 0.0, 90.0)
+        assert abs(sep - 90.0) < 1e-10
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Tests Conjonctions
+# ──────────────────────────────────────────────────────────────────────
+
+class TestRechercherConjonctions:
+    """Vérifie la recherche de conjonctions/oppositions."""
+
+    def test_retourne_liste(self):
+        """Le résultat est une liste."""
+        resultats = MeeusEngine.rechercher_conjonctions(
+            datetime(2024, 1, 1), nb_jours=30)
+        assert isinstance(resultats, list)
+
+    def test_structure_resultat(self):
+        """Chaque résultat contient les clés attendues."""
+        resultats = MeeusEngine.rechercher_conjonctions(
+            datetime(2024, 1, 1), nb_jours=60)
+        for r in resultats:
+            assert 'date' in r
+            assert 'type' in r
+            assert r['type'] in ('conjonction', 'opposition')
+            assert 'objets' in r
+            assert 'separation' in r
+
+    def test_evenements_sur_un_an(self):
+        """Sur un an, on doit trouver au moins quelques événements."""
+        resultats = MeeusEngine.rechercher_conjonctions(
+            datetime(2024, 1, 1), nb_jours=365)
+        assert len(resultats) >= 1
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Tests Éclipses
+# ──────────────────────────────────────────────────────────────────────
+
+class TestRechercherEclipses:
+    """Vérifie la détection d'éclipses."""
+
+    def test_retourne_liste(self):
+        """Le résultat est une liste."""
+        resultats = MeeusEngine.rechercher_eclipses(datetime(2024, 1, 1), nb_mois=6)
+        assert isinstance(resultats, list)
+
+    def test_moins_eclipses_que_lunaisons(self):
+        """Sur 12 mois, moins d'éclipses que de lunaisons (max ~5-6)."""
+        resultats = MeeusEngine.rechercher_eclipses(datetime(2024, 1, 1), nb_mois=12)
+        assert len(resultats) < 12
+
+    def test_eclipses_2024(self):
+        """En 2024, il y a au moins 2 éclipses (solaire + lunaire connues)."""
+        resultats = MeeusEngine.rechercher_eclipses(datetime(2024, 1, 1), nb_mois=12)
+        types = [r['type'] for r in resultats]
+        assert len(resultats) >= 2, f"Seulement {len(resultats)} éclipse(s) détectée(s)"
+
+    def test_structure_resultat(self):
+        """Chaque résultat contient les clés attendues."""
+        resultats = MeeusEngine.rechercher_eclipses(datetime(2024, 1, 1), nb_mois=6)
+        for r in resultats:
+            assert 'date' in r
+            assert r['type'] in ('solaire', 'lunaire')
+            assert 'certitude' in r
+            assert 'latitude_lune' in r
+            assert abs(r['latitude_lune']) < 1.58

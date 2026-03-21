@@ -261,6 +261,7 @@ class AstroApp:
             ("Dec",       "Déclinaison"),
             ("Alt",       "Hauteur"),
             ("Az",        "Azimut"),
+            ("EoT",       "Éq. du Temps"),
             ("DawnAstro", "Aube Astro  −18°"),
             ("DawnNaut",  "Aube Naut.  −12°"),
             ("Dawn",      "Aube Civile  −6°"),
@@ -390,6 +391,28 @@ class AstroApp:
         self.fig3.subplots_adjust(left=0.05, right=0.97, top=0.93, bottom=0.05)
         self.canvas3 = FigureCanvasTkAgg(self.fig3, master=right_pl)
         self.canvas3.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        # ── Onglet 5 : Événements astronomiques ──────────────────────
+        tab_evt = tabs.add("📅  Événements")
+
+        btn_frame = ctk.CTkFrame(tab_evt, fg_color="transparent")
+        btn_frame.pack(fill=tk.X, padx=10, pady=(10, 4))
+
+        ctk.CTkButton(btn_frame, text="🔍  Rechercher Éclipses (12 mois)",
+                      command=self._rechercher_eclipses_gui,
+                      fg_color=Config.BTN_COLOR, height=32,
+                      font=ctk.CTkFont(size=12)).pack(side=tk.LEFT, padx=(0, 8))
+        ctk.CTkButton(btn_frame, text="🔍  Rechercher Conjonctions (12 mois)",
+                      command=self._rechercher_conjonctions_gui,
+                      fg_color=Config.FG_PURPLE, height=32,
+                      font=ctk.CTkFont(size=12)).pack(side=tk.LEFT)
+
+        self.evt_scroll = ctk.CTkScrollableFrame(tab_evt, fg_color=Config.BG_MAIN,
+                                                  corner_radius=8)
+        self.evt_scroll.pack(fill=tk.BOTH, expand=True, padx=10, pady=(4, 10))
+
+        ctk.CTkLabel(self.evt_scroll, text="Cliquez sur un bouton pour lancer la recherche.",
+                     text_color=Config.FG_LABEL, font=ctk.CTkFont(size=11)).pack(pady=20)
 
     def _build_data_grid(self, parent, color, fields):
         """
@@ -759,6 +782,94 @@ class AstroApp:
                       fg_color=Config.BTN_COLOR, width=100,
                       height=28).pack(pady=(4, 10))
 
+    # ──────────────────────────────────────────────────────────────────
+    # ONGLET ÉVÉNEMENTS
+    # ──────────────────────────────────────────────────────────────────
+
+    def _vider_evt_scroll(self):
+        """Supprime tous les widgets du scrollframe des événements."""
+        for w in self.evt_scroll.winfo_children():
+            w.destroy()
+
+    def _ajouter_evt_ligne(self, date_str, texte, couleur):
+        """Ajoute une ligne de résultat dans le scrollframe."""
+        row = ctk.CTkFrame(self.evt_scroll, fg_color=Config.BG_PANEL, corner_radius=6)
+        row.pack(fill=tk.X, pady=2, padx=4)
+        ctk.CTkLabel(row, text=date_str, text_color=Config.FG_WHITE,
+                     font=ctk.CTkFont(size=11, weight="bold"), width=140,
+                     anchor="w").pack(side=tk.LEFT, padx=(10, 6), pady=6)
+        ctk.CTkLabel(row, text=texte, text_color=couleur,
+                     font=ctk.CTkFont(size=11), anchor="w").pack(
+                         side=tk.LEFT, padx=(0, 10), pady=6)
+
+    def _rechercher_eclipses_gui(self):
+        """Lance la recherche d'éclipses et affiche les résultats."""
+        self._vider_evt_scroll()
+        try:
+            s = self.entry_date.get()
+            fmt = "%d/%m/%Y %H:%M:%S" if s.count(":") == 2 else "%d/%m/%Y %H:%M"
+            dte = datetime.strptime(s, fmt)
+        except ValueError:
+            dte = datetime.utcnow()
+
+        ctk.CTkLabel(self.evt_scroll, text="Recherche en cours…",
+                     text_color=Config.FG_LABEL).pack(pady=10)
+        self.root.update_idletasks()
+        self._vider_evt_scroll()
+
+        resultats = MeeusEngine.rechercher_eclipses(dte, nb_mois=12)
+
+        if not resultats:
+            ctk.CTkLabel(self.evt_scroll, text="Aucune éclipse détectée sur 12 mois.",
+                         text_color=Config.FG_LABEL).pack(pady=20)
+            return
+
+        ctk.CTkLabel(self.evt_scroll,
+                     text=f"🌑  {len(resultats)} éclipse(s) trouvée(s) sur 12 mois",
+                     text_color=Config.FG_WHITE,
+                     font=ctk.CTkFont(size=13, weight="bold")).pack(pady=(8, 4))
+
+        for r in resultats:
+            couleur = Config.FG_SUN if r['type'] == 'solaire' else Config.FG_MOON
+            date_str = r['date'].strftime("%d/%m/%Y %H:%M")
+            self._ajouter_evt_ligne(date_str, r['details'], couleur)
+
+    def _rechercher_conjonctions_gui(self):
+        """Lance la recherche de conjonctions/oppositions et affiche les résultats."""
+        self._vider_evt_scroll()
+        try:
+            s = self.entry_date.get()
+            fmt = "%d/%m/%Y %H:%M:%S" if s.count(":") == 2 else "%d/%m/%Y %H:%M"
+            dte = datetime.strptime(s, fmt)
+        except ValueError:
+            dte = datetime.utcnow()
+
+        ctk.CTkLabel(self.evt_scroll, text="Recherche en cours…",
+                     text_color=Config.FG_LABEL).pack(pady=10)
+        self.root.update_idletasks()
+        self._vider_evt_scroll()
+
+        resultats = MeeusEngine.rechercher_conjonctions(dte, nb_jours=365)
+
+        if not resultats:
+            ctk.CTkLabel(self.evt_scroll,
+                         text="Aucun événement détecté sur 12 mois.",
+                         text_color=Config.FG_LABEL).pack(pady=20)
+            return
+
+        ctk.CTkLabel(self.evt_scroll,
+                     text=f"🪐  {len(resultats)} événement(s) trouvé(s) sur 12 mois",
+                     text_color=Config.FG_WHITE,
+                     font=ctk.CTkFont(size=13, weight="bold")).pack(pady=(8, 4))
+
+        for r in resultats:
+            if r['type'] == 'opposition':
+                couleur = Config.FG_GREEN
+            else:
+                couleur = Config.FG_PURPLE
+            date_str = r['date'].strftime("%d/%m/%Y")
+            self._ajouter_evt_ligne(date_str, r['details'], couleur)
+
     def geolocaliser(self):
         """Détecte la position via ip-api.com et remplit lat/lon."""
         try:
@@ -849,7 +960,8 @@ class AstroApp:
             self.m_events = MeeusEngine.trouver_evenements(dte, lat, lon, "lune")
             self.last_cache_key = key
 
-        self.update_sun_card(s_ra, s_dec, s_alt, s_az, self.s_events)
+        eot = MeeusEngine.equation_du_temps(t)
+        self.update_sun_card(s_ra, s_dec, s_alt, s_az, self.s_events, eot)
         self.update_moon_card(m_ra, m_dec, m_alt_c, m_az, illum, phase, self.m_events)
         self.tracer_graphiques(dte, lat, lon, s_alt, s_az, m_alt_c, m_az, redraw)
         self._calculer_planetes(dte, jd, t, lat, lon)
@@ -859,13 +971,14 @@ class AstroApp:
     # MISE À JOUR DES CARTES
     # ──────────────────────────────────────────────────────────────────
 
-    def update_sun_card(self, ra, dec, alt, az, ev):
+    def update_sun_card(self, ra, dec, alt, az, ev, eot=0.0):
         """Met à jour les labels Soleil et le badge d'état dans l'en-tête."""
         lb = self.sun_labels
         lb["RA"].configure(text=f"{Formatters.hms(ra)}  ({ra:.2f}h)")
         lb["Dec"].configure(text=f"{Formatters.dms(dec)}  ({dec:.2f}°)")
         lb["Alt"].configure(text=f"{alt:.2f}°")
         lb["Az"].configure(text=f"{az:.2f}°")
+        lb["EoT"].configure(text=f"{eot:+.1f} min")
 
         lb["DawnAstro"].configure(text=self._fmt_event(ev["aube_astro"]))
         lb["DawnNaut"].configure(text=self._fmt_event(ev["aube_naut"]))

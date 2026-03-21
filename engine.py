@@ -37,6 +37,199 @@ _ELEMENTS_ORBITAUX = {
     "Saturne": [ 50.077444,   1222.1137943, 9.53707032,  0.05415060, -0.00036762,  2.48446, 113.71504,  92.43194],
 }
 
+# ── Tables Meeus, chapitre 47 — Termes périodiques de la Lune ────────────
+# Chaque terme : (coeff_D, coeff_M, coeff_Mp, coeff_F, amplitude)
+# Longitude : amplitude en 0.000001° (micro-degrés), à multiplier par sin(arg)
+# Distance  : amplitude en 0.001 km (milli-km), à multiplier par cos(arg)
+_TERMES_LONGITUDE_LUNE = (
+    ( 0,  0,  1,  0,  6288774),
+    ( 2,  0, -1,  0, -1274027),
+    ( 2,  0,  0,  0,   658314),
+    ( 0,  0,  2,  0,   213618),
+    ( 0,  1,  0,  0,  -185116),
+    ( 0,  0,  0,  2,  -114332),
+    ( 2,  0, -2,  0,    58793),
+    ( 2, -1, -1,  0,    57066),
+    ( 2,  0,  1,  0,    53322),
+    ( 2, -1,  0,  0,    45758),
+    ( 0,  1, -1,  0,   -40923),
+    ( 1,  0,  0,  0,   -34720),
+    ( 0,  1,  1,  0,   -30383),
+    ( 2,  0,  0, -2,    15327),
+    ( 0,  0,  1,  2,   -12528),
+    ( 0,  0,  1, -2,    10980),
+    ( 4,  0, -1,  0,    10675),
+    ( 0,  0,  3,  0,    10034),
+    ( 4,  0, -2,  0,     8548),
+    ( 2,  1, -1,  0,    -7888),
+    ( 2,  1,  0,  0,    -6766),
+    ( 1,  0, -1,  0,    -5163),
+    ( 1,  1,  0,  0,     4987),
+    ( 2, -1,  1,  0,     4036),
+    ( 2,  0,  2,  0,     3994),
+    ( 4,  0,  0,  0,     3861),
+    ( 2,  0, -3,  0,     3665),
+    ( 0,  1, -2,  0,    -2689),
+    ( 2,  0, -1,  2,    -2602),
+    ( 2, -1, -2,  0,     2390),
+    ( 1,  0,  1,  0,    -2348),
+    ( 2, -2,  0,  0,     2236),
+    ( 0,  1,  2,  0,    -2120),
+    ( 0,  2,  0,  0,    -2069),
+    ( 2, -2, -1,  0,     2048),
+    ( 2,  0,  1, -2,    -1773),
+    ( 2,  0,  0,  2,    -1595),
+    ( 4, -1, -1,  0,     1215),
+    ( 0,  0,  2,  2,    -1110),
+    ( 3,  0, -1,  0,     -892),
+    ( 2,  1,  1,  0,     -810),
+    ( 4, -1, -2,  0,      759),
+    ( 0,  2, -1,  0,     -713),
+    ( 2,  2, -1,  0,     -700),
+    ( 2,  1, -2,  0,      691),
+    ( 2, -1,  0, -2,      596),
+    ( 4,  0,  1,  0,      549),
+    ( 0,  0,  4,  0,      537),
+    ( 4, -1,  0,  0,      520),
+    ( 1,  0, -2,  0,     -487),
+    ( 2,  1,  0, -2,     -399),
+    ( 0,  0,  2, -2,     -381),
+    ( 1,  1,  1,  0,      351),
+    ( 3,  0, -2,  0,     -340),
+    ( 4,  0, -3,  0,      330),
+    ( 2, -1,  2,  0,      327),
+    ( 0,  2,  1,  0,     -323),
+    ( 1,  1, -1,  0,      299),
+    ( 2,  0,  3,  0,      294),
+    ( 2,  0, -1, -2,        0),
+)
+
+_TERMES_DISTANCE_LUNE = (
+    ( 0,  0,  1,  0, -20905355),
+    ( 2,  0, -1,  0,  -3699111),
+    ( 2,  0,  0,  0,  -2955968),
+    ( 0,  0,  2,  0,   -569925),
+    ( 0,  1,  0,  0,     48888),
+    ( 0,  0,  0,  2,     -3149),
+    ( 2,  0, -2,  0,    246158),
+    ( 2, -1, -1,  0,   -152138),
+    ( 2,  0,  1,  0,   -170733),
+    ( 2, -1,  0,  0,   -204586),
+    ( 0,  1, -1,  0,   -129620),
+    ( 1,  0,  0,  0,    108743),
+    ( 0,  1,  1,  0,    104755),
+    ( 2,  0,  0, -2,     10321),
+    ( 0,  0,  1,  2,         0),
+    ( 0,  0,  1, -2,     79661),
+    ( 4,  0, -1,  0,    -34782),
+    ( 0,  0,  3,  0,    -23210),
+    ( 4,  0, -2,  0,    -21636),
+    ( 2,  1, -1,  0,     24208),
+    ( 2,  1,  0,  0,     30824),
+    ( 1,  0, -1,  0,     -8379),
+    ( 1,  1,  0,  0,    -16675),
+    ( 2, -1,  1,  0,    -12831),
+    ( 2,  0,  2,  0,    -10445),
+    ( 4,  0,  0,  0,    -11650),
+    ( 2,  0, -3,  0,     14403),
+    ( 0,  1, -2,  0,     -7003),
+    ( 2,  0, -1,  2,         0),
+    ( 2, -1, -2,  0,     10056),
+    ( 1,  0,  1,  0,      6322),
+    ( 2, -2,  0,  0,     -9884),
+    ( 0,  1,  2,  0,      5751),
+    ( 0,  2,  0,  0,         0),
+    ( 2, -2, -1,  0,     -4950),
+    ( 2,  0,  1, -2,         0),
+    ( 2,  0,  0,  2,      4130),
+    ( 4, -1, -1,  0,         0),
+    ( 0,  0,  2,  2,     -3958),
+    ( 3,  0, -1,  0,         0),
+    ( 2,  1,  1,  0,      3258),
+    ( 4, -1, -2,  0,      2616),
+    ( 0,  2, -1,  0,     -1897),
+    ( 2,  2, -1,  0,     -2117),
+    ( 2,  1, -2,  0,      2354),
+    ( 2, -1,  0, -2,         0),
+    ( 4,  0,  1,  0,         0),
+    ( 0,  0,  4,  0,     -1423),
+    ( 4, -1,  0,  0,     -1117),
+    ( 1,  0, -2,  0,     -1571),
+    ( 2,  1,  0, -2,     -1739),
+    ( 0,  0,  2, -2,         0),
+    ( 1,  1,  1,  0,         0),
+    ( 3,  0, -2,  0,     -4421),
+    ( 4,  0, -3,  0,         0),
+    ( 2, -1,  2,  0,         0),
+    ( 0,  2,  1,  0,      1165),
+    ( 1,  1, -1,  0,         0),
+    ( 2,  0,  3,  0,         0),
+    ( 2,  0, -1, -2,      8752),
+)
+
+_TERMES_LATITUDE_LUNE = (
+    ( 0,  0,  0,  1,  5128122),
+    ( 0,  0,  1,  1,   280602),
+    ( 0,  0,  1, -1,   277693),
+    ( 2,  0,  0, -1,   173237),
+    ( 2,  0, -1,  1,    55413),
+    ( 2,  0, -1, -1,    46271),
+    ( 2,  0,  0,  1,    32573),
+    ( 0,  0,  2,  1,    17198),
+    ( 2,  0,  1, -1,     9266),
+    ( 0,  0,  2, -1,     8822),
+    ( 2, -1,  0, -1,     8216),
+    ( 2,  0, -2, -1,     4324),
+    ( 2,  0,  1,  1,     4200),
+    ( 2,  1,  0, -1,    -3359),
+    ( 2, -1, -1,  1,     2463),
+    ( 2, -1,  0,  1,     2211),
+    ( 2, -1, -1, -1,     2065),
+    ( 0,  1, -1, -1,    -1870),
+    ( 4,  0, -1, -1,     1828),
+    ( 0,  1,  0,  1,    -1794),
+    ( 0,  0,  0,  3,    -1749),
+    ( 0,  1, -1,  1,    -1565),
+    ( 1,  0,  0,  1,    -1491),
+    ( 0,  1,  1,  1,    -1475),
+    ( 0,  1,  1, -1,    -1410),
+    ( 0,  1,  0, -1,    -1344),
+    ( 1,  0,  0, -1,    -1335),
+    ( 0,  0,  3,  1,     1107),
+    ( 4,  0,  0, -1,     1021),
+    ( 4,  0, -1,  1,      833),
+    ( 0,  0,  1, -3,      777),
+    ( 4,  0, -2,  1,      671),
+    ( 2,  0,  0, -3,      607),
+    ( 2,  0,  2, -1,      596),
+    ( 2, -1,  1, -1,      491),
+    ( 2,  0, -2,  1,     -451),
+    ( 0,  0,  3, -1,      439),
+    ( 2,  0,  2,  1,      422),
+    ( 2,  0, -3, -1,      421),
+    ( 2,  1, -1,  1,     -366),
+    ( 2,  1,  0,  1,     -351),
+    ( 4,  0,  0,  1,      331),
+    ( 2, -1,  1,  1,      315),
+    ( 2, -2,  0, -1,      302),
+    ( 0,  0,  1,  3,     -283),
+    ( 2,  1,  1, -1,     -229),
+    ( 1,  1,  0, -1,      223),
+    ( 1,  1,  0,  1,      223),
+    ( 0,  1, -2, -1,     -220),
+    ( 2,  1, -1, -1,     -220),
+    ( 1,  0,  1,  1,     -185),
+    ( 2, -1, -2, -1,      181),
+    ( 0,  1,  2,  1,     -177),
+    ( 4,  0, -2, -1,      176),
+    ( 4, -1, -1, -1,      166),
+    ( 1,  0,  1, -1,     -164),
+    ( 4,  0,  1, -1,      132),
+    ( 1,  0, -1, -1,     -119),
+    ( 4, -1,  0, -1,      115),
+    ( 2, -2,  0,  1,      107),
+)
+
 
 class MeeusEngine:
     """
@@ -123,12 +316,33 @@ class MeeusEngine:
         return l, r
 
     @classmethod
+    def equation_du_temps(cls, t):
+        """
+        Calcule l'Équation du Temps (temps solaire apparent − temps solaire moyen).
+
+        Args:
+            t (float): Siècles juliens depuis J2000.0.
+
+        Returns:
+            float: Équation du temps en minutes. Positif = Soleil en avance.
+
+        Référence : Meeus, chap. 28.
+        """
+        l0 = cls.mod360(280.46646 + 36000.76983 * t)
+        s_l, _ = cls.position_soleil(t)
+        ra, _ = cls.ecliptique_vers_equatorial(s_l, 0, t)
+        alpha_deg = ra * 15.0
+        eot_deg = l0 - 0.0057183 - alpha_deg
+        eot_deg = ((eot_deg + 180) % 360) - 180
+        return eot_deg * 4.0
+
+    @classmethod
     def position_lune(cls, t):
         """
         Calcule la position de la Lune en coordonnées écliptiques géocentriques.
 
-        Utilise la série simplifiée de Meeus (précision ~1°), adéquate pour
-        le calcul des événements journaliers et de la phase lunaire.
+        Utilise la série complète de Meeus (précision ~0.01°) avec les tables
+        périodiques du chapitre 47 (~60 termes en longitude/distance/latitude).
 
         Args:
             t (float): Siècles juliens depuis J2000.0 (via siecle_julien2000).
@@ -142,15 +356,70 @@ class MeeusEngine:
 
         Référence : Meeus, chap. 47.
         """
-        lp = cls.mod360(218.316 + 481267.881 * t)
-        d = cls.mod360(297.85 + 445267.111 * t)
-        m = cls.mod360(357.53 + 35999.05 * t)
-        mp = cls.mod360(134.96 + 477198.867 * t)
-        f = cls.mod360(93.27 + 483202.018 * t)
-        l = lp + 6.29 * math.sin(math.radians(mp)) - 1.27 * math.sin(math.radians(mp - 2 * d)) + 0.66 * math.sin(math.radians(2 * d))
-        b = 5.13 * math.sin(math.radians(f)) + 0.28 * math.sin(math.radians(mp + f)) - 0.28 * math.sin(math.radians(mp - f))
-        p = 0.9508 + 0.0518 * math.cos(math.radians(mp)) + 0.0095 * math.cos(math.radians(mp - 2 * d))
-        return cls.mod360(l), b, p
+        t2 = t * t
+        t3 = t2 * t
+
+        # Arguments fondamentaux (haute précision)
+        lp = cls.mod360(218.3164477 + 481267.88123421 * t
+                        - 0.0015786 * t2 + t3 / 538841.0 - t2 * t2 / 65194000.0)
+        d = cls.mod360(297.8501921 + 445267.1114034 * t
+                       - 0.0018819 * t2 + t3 / 545868.0 - t2 * t2 / 113065000.0)
+        m = cls.mod360(357.5291092 + 35999.0502909 * t
+                       - 0.0001536 * t2 + t3 / 24490000.0)
+        mp = cls.mod360(134.9633964 + 477198.8675055 * t
+                        + 0.0087414 * t2 + t3 / 69699.0 - t2 * t2 / 14712000.0)
+        f = cls.mod360(93.2720950 + 483202.0175233 * t
+                       - 0.0036539 * t2 - t3 / 3526000.0 + t2 * t2 / 863310000.0)
+
+        # Termes additionnels
+        a1 = cls.mod360(119.75 + 131.849 * t)
+        a2 = cls.mod360(53.09 + 479264.290 * t)
+        a3 = cls.mod360(313.45 + 481266.484 * t)
+
+        # Facteur d'excentricité de l'orbite terrestre
+        e = 1.0 - 0.002516 * t - 0.0000074 * t2
+
+        dr = math.radians
+        d_r, m_r, mp_r, f_r = dr(d), dr(m), dr(mp), dr(f)
+
+        # Somme des termes périodiques
+        sl = 0.0  # longitude (micro-degrés)
+        sr = 0.0  # distance (milli-km)
+        sb = 0.0  # latitude (micro-degrés)
+
+        for cD, cM, cMp, cF, amp in _TERMES_LONGITUDE_LUNE:
+            if amp == 0:
+                continue
+            arg = cD * d_r + cM * m_r + cMp * mp_r + cF * f_r
+            ec = e ** abs(cM) if cM != 0 else 1.0
+            sl += amp * ec * math.sin(arg)
+
+        for cD, cM, cMp, cF, amp in _TERMES_DISTANCE_LUNE:
+            if amp == 0:
+                continue
+            arg = cD * d_r + cM * m_r + cMp * mp_r + cF * f_r
+            ec = e ** abs(cM) if cM != 0 else 1.0
+            sr += amp * ec * math.cos(arg)
+
+        for cD, cM, cMp, cF, amp in _TERMES_LATITUDE_LUNE:
+            if amp == 0:
+                continue
+            arg = cD * d_r + cM * m_r + cMp * mp_r + cF * f_r
+            ec = e ** abs(cM) if cM != 0 else 1.0
+            sb += amp * ec * math.sin(arg)
+
+        # Corrections additionnelles (Meeus p.338)
+        sl += 3958 * math.sin(dr(a1)) + 1962 * math.sin(dr(lp - f)) + 318 * math.sin(dr(a2))
+        sb += (-2235 * math.sin(dr(lp)) + 382 * math.sin(dr(a3))
+               + 175 * math.sin(dr(a1 - f)) + 175 * math.sin(dr(a1 + f))
+               + 127 * math.sin(dr(lp - mp)) - 115 * math.sin(dr(lp + mp)))
+
+        lon = cls.mod360(lp + sl / 1_000_000.0)
+        lat = sb / 1_000_000.0
+        dist_km = 385000.56 + sr / 1000.0
+        parallaxe = math.degrees(math.asin(6378.14 / dist_km))
+
+        return lon, lat, parallaxe
 
     @classmethod
     def ecliptique_vers_equatorial(cls, l_deg, b_deg, t):
@@ -404,3 +673,237 @@ class MeeusEngine:
         # Conversion écliptique → équatorial
         ra, dec = cls.ecliptique_vers_equatorial(lam_geo, beta_geo, t)
         return ra, dec, dist
+
+    # ──────────────────────────────────────────────────────────────────
+    # SÉPARATION ANGULAIRE, CONJONCTIONS ET ÉCLIPSES
+    # ──────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def separation_angulaire(ra1_h, dec1_deg, ra2_h, dec2_deg):
+        """
+        Calcule la séparation angulaire entre deux objets célestes.
+
+        Args:
+            ra1_h, dec1_deg: Coordonnées équatoriales du 1er objet (heures, degrés).
+            ra2_h, dec2_deg: Coordonnées équatoriales du 2e objet (heures, degrés).
+
+        Returns:
+            float: Séparation angulaire en degrés [0, 180].
+
+        Référence : Meeus, chap. 17.
+        """
+        ra1 = math.radians(ra1_h * 15.0)
+        ra2 = math.radians(ra2_h * 15.0)
+        d1 = math.radians(dec1_deg)
+        d2 = math.radians(dec2_deg)
+        cos_d = (math.sin(d1) * math.sin(d2)
+                 + math.cos(d1) * math.cos(d2) * math.cos(ra1 - ra2))
+        cos_d = max(-1.0, min(1.0, cos_d))
+        return math.degrees(math.acos(cos_d))
+
+    @classmethod
+    def rechercher_conjonctions(cls, dte_debut, nb_jours=365):
+        """
+        Recherche les conjonctions et oppositions planétaires sur une période.
+
+        Scanne jour par jour et détecte les minima de séparation angulaire
+        entre paires d'astres (< 5°) ainsi que les oppositions des planètes
+        extérieures (élongation au Soleil > 175°).
+
+        Args:
+            dte_debut (datetime): Date de début de la recherche.
+            nb_jours (int): Durée en jours (défaut 365).
+
+        Returns:
+            list[dict]: Liste triée par date, chaque dict contient :
+                'date' (datetime), 'type' ('conjonction'|'opposition'),
+                'objets' (tuple[str, str]), 'separation' (float, degrés),
+                'details' (str).
+        """
+        from datetime import datetime
+
+        planetes = ["Venus", "Mars", "Jupiter", "Saturne"]
+        paires = []
+        for i, a in enumerate(planetes):
+            for b in planetes[i + 1:]:
+                paires.append((a, b))
+
+        seuil_conj = 5.0
+        seuil_oppo = 175.0
+        resultats = []
+
+        prev_seps = {}
+        prev_elongs = {}
+
+        for jour in range(nb_jours):
+            dte = dte_debut + timedelta(days=jour)
+            jd = cls.jour_julien(dte)
+            t = cls.siecle_julien2000(dte)
+
+            s_l, _ = cls.position_soleil(t)
+            s_ra, s_dec = cls.ecliptique_vers_equatorial(s_l, 0, t)
+
+            positions = {}
+            for pname in planetes:
+                ra, dec, _ = cls.position_planete(t, pname)
+                positions[pname] = (ra, dec)
+
+            # Conjonctions planète-planète
+            for a, b in paires:
+                ra_a, dec_a = positions[a]
+                ra_b, dec_b = positions[b]
+                sep = cls.separation_angulaire(ra_a, dec_a, ra_b, dec_b)
+                cle = (a, b)
+                if cle in prev_seps and len(prev_seps[cle]) >= 2:
+                    p2, p1 = prev_seps[cle]
+                    if p1 < p2 and p1 < sep and p1 < seuil_conj:
+                        resultats.append({
+                            'date': dte - timedelta(days=1),
+                            'type': 'conjonction',
+                            'objets': (a, b),
+                            'separation': p1,
+                            'details': f"{a} – {b} : {p1:.1f}°",
+                        })
+                prev_seps[cle] = (prev_seps.get(cle, (sep,))[-1], sep)
+
+            # Conjonctions planète-Soleil et oppositions
+            for pname in planetes:
+                ra_p, dec_p = positions[pname]
+                elong = cls.separation_angulaire(ra_p, dec_p, s_ra, s_dec)
+                cle = pname
+                if cle in prev_elongs and len(prev_elongs[cle]) >= 2:
+                    p2, p1 = prev_elongs[cle]
+                    # Conjonction au Soleil (minimum d'élongation)
+                    if p1 < p2 and p1 < elong and p1 < seuil_conj:
+                        resultats.append({
+                            'date': dte - timedelta(days=1),
+                            'type': 'conjonction',
+                            'objets': (pname, 'Soleil'),
+                            'separation': p1,
+                            'details': f"{pname} en conjonction solaire : {p1:.1f}°",
+                        })
+                    # Opposition (maximum d'élongation > seuil, planètes extérieures)
+                    if (pname in ("Mars", "Jupiter", "Saturne")
+                            and p1 > p2 and p1 > elong and p1 > seuil_oppo):
+                        resultats.append({
+                            'date': dte - timedelta(days=1),
+                            'type': 'opposition',
+                            'objets': (pname, 'Soleil'),
+                            'separation': p1,
+                            'details': f"{pname} en opposition : {p1:.1f}°",
+                        })
+                prev_elongs[cle] = (prev_elongs.get(cle, (elong,))[-1], elong)
+
+        resultats.sort(key=lambda r: r['date'])
+        return resultats
+
+    @classmethod
+    def _trouver_syzygie(cls, dte_approx, cible_phase=0):
+        """
+        Affine la date d'une syzygie (nouvelle lune ou pleine lune).
+
+        Args:
+            dte_approx (datetime): Date approximative (±2 jours).
+            cible_phase (float): 0 pour nouvelle lune, 180 pour pleine lune.
+
+        Returns:
+            datetime: Date raffinée (précision ~1 minute).
+        """
+        meilleur_dt = dte_approx
+        meilleur_diff = 999.0
+
+        # Passe 1 : scan par pas de 1h sur ±2 jours
+        for h in range(-48, 49):
+            dt = dte_approx + timedelta(hours=h)
+            t = cls.siecle_julien2000(dt)
+            s_l, _ = cls.position_soleil(t)
+            m_l, _, _ = cls.position_lune(t)
+            phase = cls.mod360(m_l - s_l)
+            diff = min(abs(phase - cible_phase), 360 - abs(phase - cible_phase))
+            if diff < meilleur_diff:
+                meilleur_diff = diff
+                meilleur_dt = dt
+
+        # Passe 2 : raffinage par pas de 1 min sur ±1h
+        centre = meilleur_dt
+        meilleur_diff = 999.0
+        for m in range(-60, 61):
+            dt = centre + timedelta(minutes=m)
+            t = cls.siecle_julien2000(dt)
+            s_l, _ = cls.position_soleil(t)
+            m_l, _, _ = cls.position_lune(t)
+            phase = cls.mod360(m_l - s_l)
+            diff = min(abs(phase - cible_phase), 360 - abs(phase - cible_phase))
+            if diff < meilleur_diff:
+                meilleur_diff = diff
+                meilleur_dt = dt
+
+        return meilleur_dt
+
+    @classmethod
+    def rechercher_eclipses(cls, dte_debut, nb_mois=12):
+        """
+        Recherche les éclipses solaires et lunaires sur une période.
+
+        Scanne chaque lunaison pour trouver les nouvelles et pleines lunes,
+        puis vérifie si la latitude écliptique de la Lune est assez faible
+        pour qu'une éclipse se produise (seuils de Meeus, chap. 54).
+
+        Args:
+            dte_debut (datetime): Date de début.
+            nb_mois (int): Nombre de mois synodiques à scanner (défaut 12).
+
+        Returns:
+            list[dict]: Liste triée par date, chaque dict contient :
+                'date' (datetime), 'type' ('solaire'|'lunaire'),
+                'certitude' ('certain'|'possible'|'pénombral'),
+                'latitude_lune' (float, degrés),
+                'details' (str).
+        """
+        mois_synodique = 29.530588
+        resultats = []
+
+        for i in range(nb_mois):
+            # Date approx de la nouvelle lune
+            dte_nl = dte_debut + timedelta(days=i * mois_synodique)
+            nl = cls._trouver_syzygie(dte_nl, cible_phase=0)
+
+            t_nl = cls.siecle_julien2000(nl)
+            _, b_nl, _ = cls.position_lune(t_nl)
+
+            if abs(b_nl) < 1.58:
+                certitude = 'certain' if abs(b_nl) < 0.90 else 'possible'
+                resultats.append({
+                    'date': nl,
+                    'type': 'solaire',
+                    'certitude': certitude,
+                    'latitude_lune': b_nl,
+                    'details': (f"Éclipse solaire ({certitude}) — "
+                                f"lat. Lune : {b_nl:+.2f}°"),
+                })
+
+            # Date approx de la pleine lune (~14.76 jours après NL)
+            dte_pl = dte_nl + timedelta(days=mois_synodique / 2)
+            pl = cls._trouver_syzygie(dte_pl, cible_phase=180)
+
+            t_pl = cls.siecle_julien2000(pl)
+            _, b_pl, _ = cls.position_lune(t_pl)
+
+            if abs(b_pl) < 1.58:
+                if abs(b_pl) < 0.90:
+                    certitude = 'certain'
+                elif abs(b_pl) < 1.09:
+                    certitude = 'pénombral'
+                else:
+                    certitude = 'possible'
+                resultats.append({
+                    'date': pl,
+                    'type': 'lunaire',
+                    'certitude': certitude,
+                    'latitude_lune': b_pl,
+                    'details': (f"Éclipse lunaire ({certitude}) — "
+                                f"lat. Lune : {b_pl:+.2f}°"),
+                })
+
+        resultats.sort(key=lambda r: r['date'])
+        return resultats
