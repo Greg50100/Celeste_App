@@ -5,6 +5,8 @@ Convertit les valeurs numériques brutes (degrés décimaux, heures décimales,
 angles de phase) en chaînes de caractères lisibles pour l'interface graphique.
 """
 
+from i18n import t
+
 # ==========================================================
 # 2. FORMATAGE DES DONNÉES
 # ==========================================================
@@ -75,20 +77,30 @@ class Formatters:
         """
         norm = phase_angle % 360
         if norm < 22.5:
-            return f"{illum:.1f}% 🌑 Nouvelle Lune"
+            name = t("phases.new_moon")
+            emoji = "🌑"
         elif norm < 67.5:
-            return f"{illum:.1f}% 🌒 Pr. Croissant"
+            name = t("phases.waxing_crescent")
+            emoji = "🌒"
         elif norm < 112.5:
-            return f"{illum:.1f}% 🌓 Pr. Quartier"
+            name = t("phases.first_quarter")
+            emoji = "🌓"
         elif norm < 157.5:
-            return f"{illum:.1f}% 🌔 Gibb. Croiss."
+            name = t("phases.waxing_gibbous")
+            emoji = "🌔"
         elif norm < 202.5:
-            return f"{illum:.1f}% 🌕 Pleine Lune"
+            name = t("phases.full_moon")
+            emoji = "🌕"
         elif norm < 247.5:
-            return f"{illum:.1f}% 🌖 Gibb. Décroiss."
+            name = t("phases.waning_gibbous")
+            emoji = "🌖"
         elif norm < 292.5:
-            return f"{illum:.1f}% 🌗 Der. Quartier"
+            name = t("phases.last_quarter")
+            emoji = "🌗"
         elif norm < 337.5:
-            return f"{illum:.1f}% 🌘 Der. Croissant"
+            name = t("phases.waning_crescent")
+            emoji = "🌘"
         else:
-            return f"{illum:.1f}% 🌑 Nouvelle Lune"
+            name = t("phases.new_moon")
+            emoji = "🌑"
+        return f"{illum:.1f}% {emoji} {name}"
