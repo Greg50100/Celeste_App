@@ -6,7 +6,7 @@
 ![CustomTkinter](https://img.shields.io/badge/UI-CustomTkinter-blueviolet)
 ![Matplotlib](https://img.shields.io/badge/Graphiques-Matplotlib-orange)
 ![Licence](https://img.shields.io/badge/Licence-MIT-green)
-![CI](https://github.com/<votre-nom>/Celeste_App/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Greg50100/Celeste_App/actions/workflows/ci.yml/badge.svg)
 
 ---
 
@@ -36,7 +36,7 @@ Céleste calcule en temps réel — ou pour n'importe quelle date — les positi
 ### Cloner le dépôt
 
 ```bash
-git clone https://github.com/<votre-nom>/Celeste_App.git
+git clone https://github.com/Greg50100/Celeste_App.git
 cd Celeste_App
 ```
 
