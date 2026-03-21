@@ -316,6 +316,27 @@ class MeeusEngine:
         return l, r
 
     @classmethod
+    def equation_du_temps(cls, t):
+        """
+        Calcule l'Équation du Temps (temps solaire apparent − temps solaire moyen).
+
+        Args:
+            t (float): Siècles juliens depuis J2000.0.
+
+        Returns:
+            float: Équation du temps en minutes. Positif = Soleil en avance.
+
+        Référence : Meeus, chap. 28.
+        """
+        l0 = cls.mod360(280.46646 + 36000.76983 * t)
+        s_l, _ = cls.position_soleil(t)
+        ra, _ = cls.ecliptique_vers_equatorial(s_l, 0, t)
+        alpha_deg = ra * 15.0
+        eot_deg = l0 - 0.0057183 - alpha_deg
+        eot_deg = ((eot_deg + 180) % 360) - 180
+        return eot_deg * 4.0
+
+    @classmethod
     def position_lune(cls, t):
         """
         Calcule la position de la Lune en coordonnées écliptiques géocentriques.
@@ -652,3 +673,237 @@ class MeeusEngine:
         # Conversion écliptique → équatorial
         ra, dec = cls.ecliptique_vers_equatorial(lam_geo, beta_geo, t)
         return ra, dec, dist
+
+    # ──────────────────────────────────────────────────────────────────
+    # SÉPARATION ANGULAIRE, CONJONCTIONS ET ÉCLIPSES
+    # ──────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def separation_angulaire(ra1_h, dec1_deg, ra2_h, dec2_deg):
+        """
+        Calcule la séparation angulaire entre deux objets célestes.
+
+        Args:
+            ra1_h, dec1_deg: Coordonnées équatoriales du 1er objet (heures, degrés).
+            ra2_h, dec2_deg: Coordonnées équatoriales du 2e objet (heures, degrés).
+
+        Returns:
+            float: Séparation angulaire en degrés [0, 180].
+
+        Référence : Meeus, chap. 17.
+        """
+        ra1 = math.radians(ra1_h * 15.0)
+        ra2 = math.radians(ra2_h * 15.0)
+        d1 = math.radians(dec1_deg)
+        d2 = math.radians(dec2_deg)
+        cos_d = (math.sin(d1) * math.sin(d2)
+                 + math.cos(d1) * math.cos(d2) * math.cos(ra1 - ra2))
+        cos_d = max(-1.0, min(1.0, cos_d))
+        return math.degrees(math.acos(cos_d))
+
+    @classmethod
+    def rechercher_conjonctions(cls, dte_debut, nb_jours=365):
+        """
+        Recherche les conjonctions et oppositions planétaires sur une période.
+
+        Scanne jour par jour et détecte les minima de séparation angulaire
+        entre paires d'astres (< 5°) ainsi que les oppositions des planètes
+        extérieures (élongation au Soleil > 175°).
+
+        Args:
+            dte_debut (datetime): Date de début de la recherche.
+            nb_jours (int): Durée en jours (défaut 365).
+
+        Returns:
+            list[dict]: Liste triée par date, chaque dict contient :
+                'date' (datetime), 'type' ('conjonction'|'opposition'),
+                'objets' (tuple[str, str]), 'separation' (float, degrés),
+                'details' (str).
+        """
+        from datetime import datetime
+
+        planetes = ["Venus", "Mars", "Jupiter", "Saturne"]
+        paires = []
+        for i, a in enumerate(planetes):
+            for b in planetes[i + 1:]:
+                paires.append((a, b))
+
+        seuil_conj = 5.0
+        seuil_oppo = 175.0
+        resultats = []
+
+        prev_seps = {}
+        prev_elongs = {}
+
+        for jour in range(nb_jours):
+            dte = dte_debut + timedelta(days=jour)
+            jd = cls.jour_julien(dte)
+            t = cls.siecle_julien2000(dte)
+
+            s_l, _ = cls.position_soleil(t)
+            s_ra, s_dec = cls.ecliptique_vers_equatorial(s_l, 0, t)
+
+            positions = {}
+            for pname in planetes:
+                ra, dec, _ = cls.position_planete(t, pname)
+                positions[pname] = (ra, dec)
+
+            # Conjonctions planète-planète
+            for a, b in paires:
+                ra_a, dec_a = positions[a]
+                ra_b, dec_b = positions[b]
+                sep = cls.separation_angulaire(ra_a, dec_a, ra_b, dec_b)
+                cle = (a, b)
+                if cle in prev_seps and len(prev_seps[cle]) >= 2:
+                    p2, p1 = prev_seps[cle]
+                    if p1 < p2 and p1 < sep and p1 < seuil_conj:
+                        resultats.append({
+                            'date': dte - timedelta(days=1),
+                            'type': 'conjonction',
+                            'objets': (a, b),
+                            'separation': p1,
+                            'details': f"{a} – {b} : {p1:.1f}°",
+                        })
+                prev_seps[cle] = (prev_seps.get(cle, (sep,))[-1], sep)
+
+            # Conjonctions planète-Soleil et oppositions
+            for pname in planetes:
+                ra_p, dec_p = positions[pname]
+                elong = cls.separation_angulaire(ra_p, dec_p, s_ra, s_dec)
+                cle = pname
+                if cle in prev_elongs and len(prev_elongs[cle]) >= 2:
+                    p2, p1 = prev_elongs[cle]
+                    # Conjonction au Soleil (minimum d'élongation)
+                    if p1 < p2 and p1 < elong and p1 < seuil_conj:
+                        resultats.append({
+                            'date': dte - timedelta(days=1),
+                            'type': 'conjonction',
+                            'objets': (pname, 'Soleil'),
+                            'separation': p1,
+                            'details': f"{pname} en conjonction solaire : {p1:.1f}°",
+                        })
+                    # Opposition (maximum d'élongation > seuil, planètes extérieures)
+                    if (pname in ("Mars", "Jupiter", "Saturne")
+                            and p1 > p2 and p1 > elong and p1 > seuil_oppo):
+                        resultats.append({
+                            'date': dte - timedelta(days=1),
+                            'type': 'opposition',
+                            'objets': (pname, 'Soleil'),
+                            'separation': p1,
+                            'details': f"{pname} en opposition : {p1:.1f}°",
+                        })
+                prev_elongs[cle] = (prev_elongs.get(cle, (elong,))[-1], elong)
+
+        resultats.sort(key=lambda r: r['date'])
+        return resultats
+
+    @classmethod
+    def _trouver_syzygie(cls, dte_approx, cible_phase=0):
+        """
+        Affine la date d'une syzygie (nouvelle lune ou pleine lune).
+
+        Args:
+            dte_approx (datetime): Date approximative (±2 jours).
+            cible_phase (float): 0 pour nouvelle lune, 180 pour pleine lune.
+
+        Returns:
+            datetime: Date raffinée (précision ~1 minute).
+        """
+        meilleur_dt = dte_approx
+        meilleur_diff = 999.0
+
+        # Passe 1 : scan par pas de 1h sur ±2 jours
+        for h in range(-48, 49):
+            dt = dte_approx + timedelta(hours=h)
+            t = cls.siecle_julien2000(dt)
+            s_l, _ = cls.position_soleil(t)
+            m_l, _, _ = cls.position_lune(t)
+            phase = cls.mod360(m_l - s_l)
+            diff = min(abs(phase - cible_phase), 360 - abs(phase - cible_phase))
+            if diff < meilleur_diff:
+                meilleur_diff = diff
+                meilleur_dt = dt
+
+        # Passe 2 : raffinage par pas de 1 min sur ±1h
+        centre = meilleur_dt
+        meilleur_diff = 999.0
+        for m in range(-60, 61):
+            dt = centre + timedelta(minutes=m)
+            t = cls.siecle_julien2000(dt)
+            s_l, _ = cls.position_soleil(t)
+            m_l, _, _ = cls.position_lune(t)
+            phase = cls.mod360(m_l - s_l)
+            diff = min(abs(phase - cible_phase), 360 - abs(phase - cible_phase))
+            if diff < meilleur_diff:
+                meilleur_diff = diff
+                meilleur_dt = dt
+
+        return meilleur_dt
+
+    @classmethod
+    def rechercher_eclipses(cls, dte_debut, nb_mois=12):
+        """
+        Recherche les éclipses solaires et lunaires sur une période.
+
+        Scanne chaque lunaison pour trouver les nouvelles et pleines lunes,
+        puis vérifie si la latitude écliptique de la Lune est assez faible
+        pour qu'une éclipse se produise (seuils de Meeus, chap. 54).
+
+        Args:
+            dte_debut (datetime): Date de début.
+            nb_mois (int): Nombre de mois synodiques à scanner (défaut 12).
+
+        Returns:
+            list[dict]: Liste triée par date, chaque dict contient :
+                'date' (datetime), 'type' ('solaire'|'lunaire'),
+                'certitude' ('certain'|'possible'|'pénombral'),
+                'latitude_lune' (float, degrés),
+                'details' (str).
+        """
+        mois_synodique = 29.530588
+        resultats = []
+
+        for i in range(nb_mois):
+            # Date approx de la nouvelle lune
+            dte_nl = dte_debut + timedelta(days=i * mois_synodique)
+            nl = cls._trouver_syzygie(dte_nl, cible_phase=0)
+
+            t_nl = cls.siecle_julien2000(nl)
+            _, b_nl, _ = cls.position_lune(t_nl)
+
+            if abs(b_nl) < 1.58:
+                certitude = 'certain' if abs(b_nl) < 0.90 else 'possible'
+                resultats.append({
+                    'date': nl,
+                    'type': 'solaire',
+                    'certitude': certitude,
+                    'latitude_lune': b_nl,
+                    'details': (f"Éclipse solaire ({certitude}) — "
+                                f"lat. Lune : {b_nl:+.2f}°"),
+                })
+
+            # Date approx de la pleine lune (~14.76 jours après NL)
+            dte_pl = dte_nl + timedelta(days=mois_synodique / 2)
+            pl = cls._trouver_syzygie(dte_pl, cible_phase=180)
+
+            t_pl = cls.siecle_julien2000(pl)
+            _, b_pl, _ = cls.position_lune(t_pl)
+
+            if abs(b_pl) < 1.58:
+                if abs(b_pl) < 0.90:
+                    certitude = 'certain'
+                elif abs(b_pl) < 1.09:
+                    certitude = 'pénombral'
+                else:
+                    certitude = 'possible'
+                resultats.append({
+                    'date': pl,
+                    'type': 'lunaire',
+                    'certitude': certitude,
+                    'latitude_lune': b_pl,
+                    'details': (f"Éclipse lunaire ({certitude}) — "
+                                f"lat. Lune : {b_pl:+.2f}°"),
+                })
+
+        resultats.sort(key=lambda r: r['date'])
+        return resultats
