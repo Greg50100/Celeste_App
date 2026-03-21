@@ -1,0 +1,49 @@
+# ── Python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+
+# ── Distribution / packaging ──────────────────────────────
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+
+# ── Environnements virtuels ───────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# ── Tests & couverture ────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Outils de développement ───────────────────────────────
+.mypy_cache/
+.ruff_cache/
+*.DS_Store
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ── PyInstaller (packaging exécutable) ───────────────────
+*.spec
+/dist_exe/
+
+# ── Données utilisateur (générées au runtime) ─────────────
+# favorites.json est versionné volontairement (données initiales)
+# Décommenter la ligne ci-dessous pour l'ignorer si souhaité :
+# favorites.json
+
+# ── Claude Code ───────────────────────────────────────────
+.claude/
