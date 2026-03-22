@@ -1,33 +1,31 @@
 """
-utils.py — Utilitaires de formatage pour Céleste
-=================================================
-Convertit les valeurs numériques brutes (degrés décimaux, heures décimales,
-angles de phase) en chaînes de caractères lisibles pour l'interface graphique.
+utils.py — Formatting Utilities for Céleste
+============================================
+Converts raw numeric values (decimal degrees, decimal hours,
+phase angles) into readable character strings for the graphical interface.
 """
 
-from i18n import t
-
 # ==========================================================
-# 2. FORMATAGE DES DONNÉES
+# 2. DATA FORMATTING
 # ==========================================================
 class Formatters:
-    """Fonctions utilitaires pour le formatage textuel des coordonnées astronomiques."""
+    """Utility functions for text formatting of astronomical coordinates."""
 
     @staticmethod
-    def hms(dh):
+    def hms(decimal_hours):
         """
-        Convertit une Ascension Droite en heures décimales vers le format Heures/Minutes/Secondes.
+        Converts Right Ascension from decimal hours to Hours/Minutes/Seconds format.
 
         Args:
-            dh (float): Ascension Droite en heures décimales (valeur absolue utilisée).
+            decimal_hours (float): Right Ascension in decimal hours (absolute value used).
 
         Returns:
-            str: Chaîne formatée, ex. "5h 34m 32.0s".
+            str: Formatted string, ex. "5h 34m 32.0s".
         """
-        dh = abs(dh)
-        h = int(dh)
-        m = int((dh - h) * 60)
-        s = round((dh - h - m / 60.0) * 3600.0, 1)
+        decimal_hours = abs(decimal_hours)
+        h = int(decimal_hours)
+        m = int((decimal_hours - h) * 60)
+        s = round((decimal_hours - h - m / 60.0) * 3600.0, 1)
         if s >= 60:
             s = 0.0
             m += 1
@@ -37,70 +35,61 @@ class Formatters:
         return f"{h}h {m:02d}m {s:04.1f}s"
 
     @staticmethod
-    def dms(dd):
+    def dms(decimal_degrees):
         """
-        Convertit une déclinaison en degrés décimaux vers le format Degrés/Minutes/Secondes.
+        Converts Declination from decimal degrees to Degrees/Minutes/Seconds format.
 
         Args:
-            dd (float): Déclinaison en degrés décimaux (peut être négatif).
+            decimal_degrees (float): Declination in decimal degrees (can be negative).
 
         Returns:
-            str: Chaîne formatée, ex. "-23° 26' 44\"".
+            str: Formatted string, ex. "-23° 26' 44\"".
         """
-        signe = "-" if dd < 0 else ""
-        dd = abs(dd)
-        d = int(dd)
-        m = int((dd - d) * 60)
-        s = round((dd - d - m / 60.0) * 3600.0, 0)
+        sign = "-" if decimal_degrees < 0 else ""
+        decimal_degrees = abs(decimal_degrees)
+        d = int(decimal_degrees)
+        m = int((decimal_degrees - d) * 60)
+        s = round((decimal_degrees - d - m / 60.0) * 3600.0, 0)
         if s >= 60:
             s = 0
             m += 1
         if m >= 60:
             m = 0
             d += 1
-        return f"{signe}{d}° {m:02d}' {int(s):02d}\""
+        return f"{sign}{d}° {m:02d}' {int(s):02d}\""
 
     @staticmethod
-    def phase_lune(illum, phase_angle):
+    def lunar_phase(illumination, phase_angle):
         """
-        Retourne une description textuelle de la phase lunaire avec son emoji.
+        Returns a textual description of lunar phase with emoji.
 
-        La phase est déterminée par l'angle de phase (différence entre la longitude
-        écliptique de la Lune et celle du Soleil), découpé en 8 secteurs de 45°.
+        The phase is determined by the phase angle (difference between
+        Moon's ecliptic longitude and Sun's ecliptic longitude),
+        divided into 8 sectors of 45°.
 
         Args:
-            illum (float): Pourcentage d'illumination de la face visible [0, 100].
-            phase_angle (float): Angle de phase en degrés (longitude Lune − longitude Soleil).
+            illumination (float): Percentage of visible face illumination [0, 100].
+            phase_angle (float): Phase angle in degrees (Moon longitude − Sun longitude).
 
         Returns:
-            str: Chaîne formatée, ex. "73.2% 🌔 Gibb. Croiss.".
+            str: Formatted string, ex. "73.2% 🌔 Waxing Gibbous".
         """
         norm = phase_angle % 360
         if norm < 22.5:
-            name = t("phases.new_moon")
-            emoji = "🌑"
+            return f"{illumination:.1f}% 🌑 New Moon"
         elif norm < 67.5:
-            name = t("phases.waxing_crescent")
-            emoji = "🌒"
+            return f"{illumination:.1f}% 🌒 Waxing Crescent"
         elif norm < 112.5:
-            name = t("phases.first_quarter")
-            emoji = "🌓"
+            return f"{illumination:.1f}% 🌓 First Quarter"
         elif norm < 157.5:
-            name = t("phases.waxing_gibbous")
-            emoji = "🌔"
+            return f"{illumination:.1f}% 🌔 Waxing Gibbous"
         elif norm < 202.5:
-            name = t("phases.full_moon")
-            emoji = "🌕"
+            return f"{illumination:.1f}% 🌕 Full Moon"
         elif norm < 247.5:
-            name = t("phases.waning_gibbous")
-            emoji = "🌖"
+            return f"{illumination:.1f}% 🌖 Waning Gibbous"
         elif norm < 292.5:
-            name = t("phases.last_quarter")
-            emoji = "🌗"
+            return f"{illumination:.1f}% 🌗 Last Quarter"
         elif norm < 337.5:
-            name = t("phases.waning_crescent")
-            emoji = "🌘"
+            return f"{illumination:.1f}% 🌘 Waning Crescent"
         else:
-            name = t("phases.new_moon")
-            emoji = "🌑"
-        return f"{illum:.1f}% {emoji} {name}"
+            return f"{illumination:.1f}% 🌑 New Moon"

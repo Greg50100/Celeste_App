@@ -1,120 +1,40 @@
 """
-config.py — Configuration et thème visuel de Céleste
-=====================================================
-Centralise la palette de couleurs et les paramètres globaux de l'application.
+config.py — Configuration and Visual Theme for Céleste
+======================================================
+Centralizes color palette and global application parameters.
 
-Trois thèmes disponibles, tous issus de la palette Catppuccin :
-  - Mocha  : dark mode profond (défaut)
-  - Frappé : dark mode atténué
-  - Latte  : mode clair
+The theme is inspired by Catppuccin Mocha (https://github.com/catppuccin/catppuccin),
+a soft and coherent dark mode palette.
 """
 
 # ==========================================================
-# 1. PALETTES DE THÈMES (Catppuccin)
+# 1. CONFIGURATION AND THEMES
 # ==========================================================
-
-THEMES = {
-    "mocha": {
-        "BG_MAIN":    "#1B1B25",
-        "BG_PANEL":   "#222230",
-        "FG_LABEL":   "#A0A0B0",
-        "FG_WHITE":   "#FFFFFF",
-        "FG_SUN":     "#F9E2AF",
-        "FG_MOON":    "#89B4FA",
-        "FG_GREEN":   "#A6E3A1",
-        "FG_PURPLE":  "#CBA6F7",
-        "FG_RED":     "#F38BA8",
-        "BTN_COLOR":  "#89B4FA",
-        "GRID_COLOR": "#45475A",
-        "appearance": "dark",
-    },
-    "frappe": {
-        "BG_MAIN":    "#303446",
-        "BG_PANEL":   "#3B3F52",
-        "FG_LABEL":   "#A5ADCE",
-        "FG_WHITE":   "#C6D0F5",
-        "FG_SUN":     "#E5C890",
-        "FG_MOON":    "#8CAAEE",
-        "FG_GREEN":   "#A6D189",
-        "FG_PURPLE":  "#CA9EE6",
-        "FG_RED":     "#E78284",
-        "BTN_COLOR":  "#8CAAEE",
-        "GRID_COLOR": "#51576D",
-        "appearance": "dark",
-    },
-    "latte": {
-        "BG_MAIN":    "#EFF1F5",
-        "BG_PANEL":   "#E6E9EF",
-        "FG_LABEL":   "#6C6F85",
-        "FG_WHITE":   "#4C4F69",
-        "FG_SUN":     "#DF8E1D",
-        "FG_MOON":    "#1E66F5",
-        "FG_GREEN":   "#40A02B",
-        "FG_PURPLE":  "#8839EF",
-        "FG_RED":     "#D20F39",
-        "BTN_COLOR":  "#1E66F5",
-        "GRID_COLOR": "#BCC0CC",
-        "appearance": "light",
-    },
-}
-
-# ==========================================================
-# 2. CLASSE CONFIG (valeurs actives)
-# ==========================================================
-
 class Config:
     """
-    Palette de couleurs et paramètres globaux de l'application Céleste.
+    Color palette and global parameters for Céleste application.
 
-    Les attributs de classe sont mis à jour dynamiquement par
-    ``Config.apply_theme(name)`` en fonction du thème choisi.
+    All colors are hexadecimal strings compatible with
+    CustomTkinter and Matplotlib.
     """
 
-    # Valeurs par défaut (Mocha)
-    BG_MAIN   = "#1B1B25"
-    BG_PANEL  = "#222230"
-    FG_LABEL  = "#A0A0B0"
-    FG_WHITE  = "#FFFFFF"
-    FG_SUN    = "#F9E2AF"
-    FG_MOON   = "#89B4FA"
-    FG_GREEN  = "#A6E3A1"
-    FG_PURPLE = "#CBA6F7"
-    FG_RED    = "#F38BA8"
-    BTN_COLOR  = "#89B4FA"
-    GRID_COLOR = "#45475A"
+    # Backgrounds
+    BG_MAIN   = "#1B1B25"   # Main dark background
+    BG_PANEL  = "#222230"   # Panels and frames background
 
-    # ── Internationalisation ──────────────────
-    DEFAULT_LANG = "fr"
-    SUPPORTED_LANGS = ["fr", "en", "es", "de"]
+    # Text
+    FG_LABEL  = "#A0A0B0"   # Labels (light gray)
+    FG_WHITE  = "#FFFFFF"   # Important values (pure white)
 
-    # ── Thème actif ───────────────────────────
-    _current_theme = "mocha"
+    # Celestial bodies
+    FG_SUN    = "#F9E2AF"   # Sun (yellow/cream)
+    FG_MOON   = "#89B4FA"   # Moon (light blue)
 
-    @classmethod
-    def apply_theme(cls, name: str) -> None:
-        """Applique un thème Catppuccin par nom."""
-        if name not in THEMES:
-            name = "mocha"
-        cls._current_theme = name
-        palette = THEMES[name]
-        cls.BG_MAIN   = palette["BG_MAIN"]
-        cls.BG_PANEL  = palette["BG_PANEL"]
-        cls.FG_LABEL  = palette["FG_LABEL"]
-        cls.FG_WHITE  = palette["FG_WHITE"]
-        cls.FG_SUN    = palette["FG_SUN"]
-        cls.FG_MOON   = palette["FG_MOON"]
-        cls.FG_GREEN  = palette["FG_GREEN"]
-        cls.FG_PURPLE = palette["FG_PURPLE"]
-        cls.FG_RED    = palette["FG_RED"]
-        cls.BTN_COLOR  = palette["BTN_COLOR"]
-        cls.GRID_COLOR = palette["GRID_COLOR"]
+    # States and events
+    FG_GREEN  = "#A6E3A1"   # Celestial body visible above horizon
+    FG_PURPLE = "#CBA6F7"   # Astronomical twilight
+    FG_RED    = "#F38BA8"   # Pitch darkness / celestial body below horizon
 
-    @classmethod
-    def current_theme(cls) -> str:
-        return cls._current_theme
-
-    @classmethod
-    def appearance_mode(cls) -> str:
-        """Retourne 'dark' ou 'light' selon le thème actif."""
-        return THEMES.get(cls._current_theme, {}).get(
-            "appearance", "dark")
+    # Graphical elements
+    BTN_COLOR  = "#89B4FA"  # Primary buttons
+    GRID_COLOR = "#45475A"  # Grid lines in charts
