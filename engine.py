@@ -1,47 +1,47 @@
 """
-engine.py — Moteur de calcul astronomique de Céleste
-=====================================================
-Implémente les algorithmes de Jean Meeus (Astronomical Algorithms, 2e éd.)
-pour le calcul des positions du Soleil, de la Lune et des planètes, ainsi
-que la détection des événements journaliers (lever, coucher, crépuscules).
+engine.py — Astronomical Calculation Engine for Céleste
+=========================================================
+Implements the algorithms of Jean Meeus (Astronomical Algorithms, 2nd ed.)
+for calculating Sun, Moon and planetary positions, as well as detecting
+daily events (sunrise, sunset, twilights).
 
-Ce module est entièrement indépendant de l'interface graphique (modèle MVC).
+This module is completely independent from the graphical interface (MVC model).
 """
 
 import math
 from datetime import timedelta
 
 # ==========================================================
-# 3. MOTEUR MATHÉMATIQUE DE JEAN MEEUS (LE MODÈLE)
+# 3. JEAN MEEUS MATHEMATICAL ENGINE (THE MODEL)
 # ==========================================================
 
-# Correction de réfraction atmosphérique (Meeus, chap. 16)
-# Le Soleil est considéré levé quand son centre est à -0.833° sous l'horizon géométrique
-# (0.5° de demi-diamètre apparent + 0.333° de réfraction standard)
-_CORRECTION_HORIZON_SOLEIL = 0.833  # degrés
+# Atmospheric refraction correction (Meeus, chap. 16)
+# The Sun is considered risen when its center is at -0.833° below the geometric horizon
+# (0.5° apparent semi-diameter + 0.333° standard refraction)
+_HORIZON_CORRECTION_SUN = 0.833  # degrees
 
-# Constantes de réfraction pour la formule de Bennett (Meeus, chap. 16)
-_REFRACTION_A = 10.3   # coefficient angulaire
-_REFRACTION_B = 5.11   # décalage angulaire
+# Refraction coefficients for Bennett's formula (Meeus, chap. 16)
+_REFRACTION_A = 10.3   # angular coefficient
+_REFRACTION_B = 5.11   # angular offset
 
-# Éléments orbitaux moyens à J2000.0 pour les planètes visibles à l'œil nu.
-# Format : [L0 (°), L1 (°/siècle), a (UA), e0, e1 (/siècle), i (°), Ω (°), ω̃ (°)]
-#   L  = longitude moyenne      a  = demi-grand axe
-#   e  = excentricité           i  = inclinaison sur l'écliptique
-#   Ω  = longitude du nœud asc. ω̃  = longitude du périhélie
-# Source : Meeus, Astronomical Algorithms, 2e éd., Tableau 31.a / App. II.
-_ELEMENTS_ORBITAUX = {
+# Mean orbital elements at J2000.0 for visible planets.
+# Format: [L0 (°), L1 (°/century), a (AU), e0, e1 (/century), i (°), Ω (°), ω̃ (°)]
+#   L  = mean longitude      a  = semi-major axis
+#   e  = eccentricity        i  = inclination on ecliptic
+#   Ω  = longitude of ascending node  ω̃  = longitude of perihelion
+# Source: Meeus, Astronomical Algorithms, 2nd ed., Table 31.a / App. II.
+_ORBITAL_ELEMENTS = {
     "Venus":   [181.979801,  58517.8156760, 0.72333199,  0.00677323, -0.00004938,  3.39471,  76.68069, 131.53298],
     "Mars":    [355.433275,  19140.2993313, 1.52366231,  0.09341233,  0.00011902,  1.85061,  49.57854, 336.04084],
     "Jupiter": [ 34.351519,   3034.9056606, 5.20336301,  0.04839266, -0.00012880,  1.30530, 100.55615,  14.75385],
-    "Saturne": [ 50.077444,   1222.1137943, 9.53707032,  0.05415060, -0.00036762,  2.48446, 113.71504,  92.43194],
+    "Saturn":  [ 50.077444,   1222.1137943, 9.53707032,  0.05415060, -0.00036762,  2.48446, 113.71504,  92.43194],
 }
 
-# ── Tables Meeus, chapitre 47 — Termes périodiques de la Lune ────────────
-# Chaque terme : (coeff_D, coeff_M, coeff_Mp, coeff_F, amplitude)
-# Longitude : amplitude en 0.000001° (micro-degrés), à multiplier par sin(arg)
-# Distance  : amplitude en 0.001 km (milli-km), à multiplier par cos(arg)
-_TERMES_LONGITUDE_LUNE = (
+# ── Meeus tables, chapter 47 — Periodic terms for the Moon ────────────
+# Each term: (coeff_D, coeff_M, coeff_Mp, coeff_F, amplitude)
+# Longitude: amplitude in 0.000001° (micro-degrees), to multiply by sin(arg)
+# Distance: amplitude in 0.001 km (milli-km), to multiply by cos(arg)
+_MOON_LONGITUDE_TERMS = (
     ( 0,  0,  1,  0,  6288774),
     ( 2,  0, -1,  0, -1274027),
     ( 2,  0,  0,  0,   658314),
@@ -104,7 +104,7 @@ _TERMES_LONGITUDE_LUNE = (
     ( 2,  0, -1, -2,        0),
 )
 
-_TERMES_DISTANCE_LUNE = (
+_MOON_DISTANCE_TERMS = (
     ( 0,  0,  1,  0, -20905355),
     ( 2,  0, -1,  0,  -3699111),
     ( 2,  0,  0,  0,  -2955968),
@@ -167,7 +167,7 @@ _TERMES_DISTANCE_LUNE = (
     ( 2,  0, -1, -2,      8752),
 )
 
-_TERMES_LATITUDE_LUNE = (
+_MOON_LATITUDE_TERMS = (
     ( 0,  0,  0,  1,  5128122),
     ( 0,  0,  1,  1,   280602),
     ( 0,  0,  1, -1,   277693),
@@ -233,35 +233,34 @@ _TERMES_LATITUDE_LUNE = (
 
 class MeeusEngine:
     """
-    Encapsule tous les calculs astronomiques purs, indépendant de l'interface.
+    Encapsulates all pure astronomical calculations, independent of the interface.
 
-    Toutes les méthodes sont des méthodes de classe ou statiques : aucun état
-    interne n'est conservé entre les appels. L'appelant fournit les paramètres
-    temporels et géographiques à chaque invocation.
+    All methods are class methods or static methods: no internal state is preserved
+    between calls. The caller provides temporal and geographic parameters at each invocation.
 
-    Référence : Jean Meeus, *Astronomical Algorithms*, 2e éd., Willmann-Bell, 1998.
+    Reference: Jean Meeus, *Astronomical Algorithms*, 2nd ed., Willmann-Bell, 1998.
     """
 
     @staticmethod
     def mod360(a):
-        """Ramène un angle à l'intervalle [0, 360[."""
+        """Returns an angle to the interval [0, 360[."""
         return a % 360
 
     @classmethod
-    def jour_julien(cls, dte):
+    def julian_day(cls, dte):
         """
-        Calcule le Jour Julien (JD) pour une date-heure donnée.
+        Calculates the Julian Day (JD) for a given datetime.
 
-        Le Jour Julien est le nombre de jours écoulés depuis le 1er janvier 4713 av. J.-C.
-        à midi en Temps Universel. Précision : à la seconde près.
+        The Julian Day is the number of days elapsed since January 1, 4713 BC
+        at noon in Universal Time. Precision: to the nearest second.
 
         Args:
-            dte (datetime): Date et heure en Temps Universel (UT).
+            dte (datetime): Date and time in Universal Time (UT).
 
         Returns:
-            float: Jour Julien correspondant.
+            float: Julian Day corresponding to the datetime.
 
-        Référence : Meeus, chap. 7.
+        Reference: Meeus, chap. 7.
         """
         y, m, d = dte.year, dte.month, dte.day
         h, mn, s = dte.hour, dte.minute, dte.second
@@ -270,42 +269,41 @@ class MeeusEngine:
             m += 12
         a = math.floor(y / 100)
         b = 2 - a + math.floor(a / 4)
-        frac_jour = d + (h / 24.0) + (mn / 1440.0) + (s / 86400.0)
-        return math.floor(365.25 * (y + 4716)) + math.floor(30.6001 * (m + 1)) + frac_jour + b - 1524.5
+        frac_day = d + (h / 24.0) + (mn / 1440.0) + (s / 86400.0)
+        return math.floor(365.25 * (y + 4716)) + math.floor(30.6001 * (m + 1)) + frac_day + b - 1524.5
 
     @classmethod
-    def siecle_julien2000(cls, dte):
+    def julian_century_j2000(cls, dte):
         """
-        Calcule le temps en siècles juliens depuis J2000.0 (1.5 janv. 2000, JD 2451545.0).
+        Calculates the time in Julian centuries since J2000.0 (January 1.5, 2000, JD 2451545.0).
 
-        Ce paramètre T est utilisé comme variable dans la plupart des séries
-        polynomiales de Meeus.
+        This parameter T is used as a variable in most of Meeus's polynomial series.
 
         Args:
-            dte (datetime): Date et heure en Temps Universel.
+            dte (datetime): Date and time in Universal Time.
 
         Returns:
-            float: Nombre de siècles juliens depuis J2000.0.
+            float: Number of Julian centuries since J2000.0.
         """
-        return (cls.jour_julien(dte) - 2451545.0) / 36525.0
+        return (cls.julian_day(dte) - 2451545.0) / 36525.0
 
     @classmethod
-    def position_soleil(cls, t):
+    def sun_position(cls, t):
         """
-        Calcule la longitude écliptique géocentrique et la distance du Soleil.
+        Calculates the geocentric ecliptic longitude and distance of the Sun.
 
-        Utilise la série de faible précision de Meeus (précision ~0.01°),
-        suffisante pour les applications d'observation visuelle.
+        Uses Meeus's low-precision series (precision ~0.01°),
+        sufficient for visual observation applications.
 
         Args:
-            t (float): Siècles juliens depuis J2000.0 (via siecle_julien2000).
+            t (float): Julian centuries since J2000.0 (via julian_century_j2000).
 
         Returns:
             tuple[float, float]:
-                - l (float): Longitude écliptique apparente du Soleil, en degrés [0, 360[.
-                - r (float): Distance Terre-Soleil en Unités Astronomiques (UA).
+                - l (float): Apparent ecliptic longitude of the Sun, in degrees [0, 360[.
+                - r (float): Earth-Sun distance in Astronomical Units (AU).
 
-        Référence : Meeus, chap. 25.
+        Reference: Meeus, chap. 25.
         """
         l0 = cls.mod360(280.46646 + 36000.76983 * t)
         m = cls.mod360(357.52911 + 35999.05029 * t)
@@ -316,50 +314,50 @@ class MeeusEngine:
         return l, r
 
     @classmethod
-    def equation_du_temps(cls, t):
+    def equation_of_time(cls, t):
         """
-        Calcule l'Équation du Temps (temps solaire apparent − temps solaire moyen).
+        Calculates the Equation of Time (apparent solar time − mean solar time).
 
         Args:
-            t (float): Siècles juliens depuis J2000.0.
+            t (float): Julian centuries since J2000.0.
 
         Returns:
-            float: Équation du temps en minutes. Positif = Soleil en avance.
+            float: Equation of Time in minutes. Positive = Sun ahead.
 
-        Référence : Meeus, chap. 28.
+        Reference: Meeus, chap. 28.
         """
         l0 = cls.mod360(280.46646 + 36000.76983 * t)
-        s_l, _ = cls.position_soleil(t)
-        ra, _ = cls.ecliptique_vers_equatorial(s_l, 0, t)
+        s_l, _ = cls.sun_position(t)
+        ra, _ = cls.ecliptic_to_equatorial(s_l, 0, t)
         alpha_deg = ra * 15.0
         eot_deg = l0 - 0.0057183 - alpha_deg
         eot_deg = ((eot_deg + 180) % 360) - 180
         return eot_deg * 4.0
 
     @classmethod
-    def position_lune(cls, t):
+    def moon_position(cls, t):
         """
-        Calcule la position de la Lune en coordonnées écliptiques géocentriques.
+        Calculates the position of the Moon in geocentric ecliptic coordinates.
 
-        Utilise la série complète de Meeus (précision ~0.01°) avec les tables
-        périodiques du chapitre 47 (~60 termes en longitude/distance/latitude).
+        Uses Meeus's complete series (precision ~0.01°) with periodic tables from
+        chapter 47 (~60 terms in longitude/distance/latitude).
 
         Args:
-            t (float): Siècles juliens depuis J2000.0 (via siecle_julien2000).
+            t (float): Julian centuries since J2000.0 (via julian_century_j2000).
 
         Returns:
             tuple[float, float, float]:
-                - l (float): Longitude écliptique géocentrique, en degrés [0, 360[.
-                - b (float): Latitude écliptique géocentrique, en degrés.
-                - p (float): Parallaxe équatoriale horizontale, en degrés
-                             (utilisée pour la correction de parallaxe et le diamètre apparent).
+                - l (float): Geocentric ecliptic longitude, in degrees [0, 360[.
+                - b (float): Geocentric ecliptic latitude, in degrees.
+                - p (float): Horizontal equatorial parallax, in degrees
+                             (used for parallax correction and apparent diameter).
 
-        Référence : Meeus, chap. 47.
+        Reference: Meeus, chap. 47.
         """
         t2 = t * t
         t3 = t2 * t
 
-        # Arguments fondamentaux (haute précision)
+        # Fundamental arguments (high precision)
         lp = cls.mod360(218.3164477 + 481267.88123421 * t
                         - 0.0015786 * t2 + t3 / 538841.0 - t2 * t2 / 65194000.0)
         d = cls.mod360(297.8501921 + 445267.1114034 * t
@@ -371,44 +369,44 @@ class MeeusEngine:
         f = cls.mod360(93.2720950 + 483202.0175233 * t
                        - 0.0036539 * t2 - t3 / 3526000.0 + t2 * t2 / 863310000.0)
 
-        # Termes additionnels
+        # Additional terms
         a1 = cls.mod360(119.75 + 131.849 * t)
         a2 = cls.mod360(53.09 + 479264.290 * t)
         a3 = cls.mod360(313.45 + 481266.484 * t)
 
-        # Facteur d'excentricité de l'orbite terrestre
+        # Earth orbit eccentricity factor
         e = 1.0 - 0.002516 * t - 0.0000074 * t2
 
         dr = math.radians
         d_r, m_r, mp_r, f_r = dr(d), dr(m), dr(mp), dr(f)
 
-        # Somme des termes périodiques
-        sl = 0.0  # longitude (micro-degrés)
+        # Sum of periodic terms
+        sl = 0.0  # longitude (micro-degrees)
         sr = 0.0  # distance (milli-km)
-        sb = 0.0  # latitude (micro-degrés)
+        sb = 0.0  # latitude (micro-degrees)
 
-        for cD, cM, cMp, cF, amp in _TERMES_LONGITUDE_LUNE:
+        for cD, cM, cMp, cF, amp in _MOON_LONGITUDE_TERMS:
             if amp == 0:
                 continue
             arg = cD * d_r + cM * m_r + cMp * mp_r + cF * f_r
             ec = e ** abs(cM) if cM != 0 else 1.0
             sl += amp * ec * math.sin(arg)
 
-        for cD, cM, cMp, cF, amp in _TERMES_DISTANCE_LUNE:
+        for cD, cM, cMp, cF, amp in _MOON_DISTANCE_TERMS:
             if amp == 0:
                 continue
             arg = cD * d_r + cM * m_r + cMp * mp_r + cF * f_r
             ec = e ** abs(cM) if cM != 0 else 1.0
             sr += amp * ec * math.cos(arg)
 
-        for cD, cM, cMp, cF, amp in _TERMES_LATITUDE_LUNE:
+        for cD, cM, cMp, cF, amp in _MOON_LATITUDE_TERMS:
             if amp == 0:
                 continue
             arg = cD * d_r + cM * m_r + cMp * mp_r + cF * f_r
             ec = e ** abs(cM) if cM != 0 else 1.0
             sb += amp * ec * math.sin(arg)
 
-        # Corrections additionnelles (Meeus p.338)
+        # Additional corrections (Meeus p.338)
         sl += 3958 * math.sin(dr(a1)) + 1962 * math.sin(dr(lp - f)) + 318 * math.sin(dr(a2))
         sb += (-2235 * math.sin(dr(lp)) + 382 * math.sin(dr(a3))
                + 175 * math.sin(dr(a1 - f)) + 175 * math.sin(dr(a1 + f))
@@ -417,29 +415,29 @@ class MeeusEngine:
         lon = cls.mod360(lp + sl / 1_000_000.0)
         lat = sb / 1_000_000.0
         dist_km = 385000.56 + sr / 1000.0
-        parallaxe = math.degrees(math.asin(6378.14 / dist_km))
+        parallax = math.degrees(math.asin(6378.14 / dist_km))
 
-        return lon, lat, parallaxe
+        return lon, lat, parallax
 
     @classmethod
-    def ecliptique_vers_equatorial(cls, l_deg, b_deg, t):
+    def ecliptic_to_equatorial(cls, l_deg, b_deg, t):
         """
-        Convertit des coordonnées écliptiques en coordonnées équatoriales.
+        Converts ecliptic coordinates to equatorial coordinates.
 
-        La transformation tient compte de l'obliquité de l'écliptique, qui
-        varie lentement avec le temps (précession).
+        The transformation accounts for the obliquity of the ecliptic,
+        which varies slowly with time (precession).
 
         Args:
-            l_deg (float): Longitude écliptique en degrés.
-            b_deg (float): Latitude écliptique en degrés.
-            t (float): Siècles juliens depuis J2000.0.
+            l_deg (float): Ecliptic longitude in degrees.
+            b_deg (float): Ecliptic latitude in degrees.
+            t (float): Julian centuries since J2000.0.
 
         Returns:
             tuple[float, float]:
-                - ra (float): Ascension Droite en heures décimales [0, 24[.
-                - dec (float): Déclinaison en degrés [-90, +90].
+                - ra (float): Right Ascension in decimal hours [0, 24[.
+                - dec (float): Declination in degrees [-90, +90].
 
-        Référence : Meeus, chap. 13.
+        Reference: Meeus, chap. 13.
         """
         eps = math.radians(23.4392911 - (46.815 * t) / 3600.0)
         l, b = math.radians(l_deg), math.radians(b_deg)
@@ -448,26 +446,26 @@ class MeeusEngine:
         return cls.mod360(math.degrees(ra)) / 15.0, math.degrees(dec)
 
     @classmethod
-    def equatorial_vers_horizontal(cls, jd, lat, lon, ra_h, dec_deg):
+    def equatorial_to_horizontal(cls, jd, lat, lon, ra_h, dec_deg):
         """
-        Convertit des coordonnées équatoriales en coordonnées horizontales locales.
+        Converts equatorial coordinates to local horizontal coordinates.
 
-        Calcule d'abord le Temps Sidéral Local (TSL) à partir du Jour Julien
-        et des coordonnées géographiques de l'observateur.
+        First calculates the Local Sidereal Time (LST) from the Julian Day
+        and observer's geographic coordinates.
 
         Args:
-            jd (float): Jour Julien de l'instant d'observation.
-            lat (float): Latitude de l'observateur en degrés (+ = Nord).
-            lon (float): Longitude de l'observateur en degrés (+ = Est).
-            ra_h (float): Ascension Droite de l'astre en heures décimales.
-            dec_deg (float): Déclinaison de l'astre en degrés.
+            jd (float): Julian Day of the observation instant.
+            lat (float): Observer's latitude in degrees (+ = North).
+            lon (float): Observer's longitude in degrees (+ = East).
+            ra_h (float): Right Ascension of the celestial object in decimal hours.
+            dec_deg (float): Declination of the celestial object in degrees.
 
         Returns:
             tuple[float, float]:
-                - altitude (float): Hauteur au-dessus de l'horizon en degrés [-90, +90].
-                - azimut (float): Azimut en degrés [0, 360[, mesuré depuis le Nord vers l'Est.
+                - altitude (float): Height above horizon in degrees [-90, +90].
+                - azimuth (float): Azimuth in degrees [0, 360[, measured from North towards East.
 
-        Référence : Meeus, chap. 13.
+        Reference: Meeus, chap. 13.
         """
         theta0 = 280.46061837 + 360.98564736629 * (jd - 2451545.0)
         lst = cls.mod360(theta0 + lon)
@@ -481,66 +479,65 @@ class MeeusEngine:
         return math.degrees(h), az
 
     @staticmethod
-    def correction_elevation(h_vraie, parallaxe_deg):
+    def elevation_correction(h_true, parallax_deg):
         """
-        Corrige l'altitude géométrique d'un astre en tenant compte de la réfraction
-        atmosphérique et de la parallaxe.
+        Corrects the geometric altitude of a celestial object for atmospheric
+        refraction and parallax.
 
-        - Réfraction : formule de Bennett, précision ~0.07' pour h > 5°.
-        - Parallaxe : soustraite (la Lune est significativement plus basse qu'elle
-          ne le paraît géométriquement à cause de la parallaxe).
+        - Refraction: Bennett's formula, precision ~0.07' for h > 5°.
+        - Parallax: subtracted (the Moon is significantly lower than it appears
+          geometrically due to parallax).
 
         Args:
-            h_vraie (float): Altitude géométrique (non corrigée) en degrés.
-            parallaxe_deg (float): Parallaxe équatoriale horizontale en degrés
-                                   (0 pour le Soleil, ~0.95° pour la Lune).
+            h_true (float): Geometric altitude (uncorrected) in degrees.
+            parallax_deg (float): Horizontal equatorial parallax in degrees
+                                  (0 for the Sun, ~0.95° for the Moon).
 
         Returns:
-            float: Altitude corrigée (réfraction + parallaxe) en degrés.
+            float: Corrected altitude (refraction + parallax) in degrees.
 
-        Référence : Meeus, chap. 16.
+        Reference: Meeus, chap. 16.
         """
-        if h_vraie < -5.0:
-            return h_vraie - parallaxe_deg
-        r = (1.02 / math.tan(math.radians(h_vraie + _REFRACTION_A / (h_vraie + _REFRACTION_B)))) / 60.0
-        return h_vraie + r - parallaxe_deg
+        if h_true < -5.0:
+            return h_true - parallax_deg
+        r = (1.02 / math.tan(math.radians(h_true + _REFRACTION_A / (h_true + _REFRACTION_B)))) / 60.0
+        return h_true + r - parallax_deg
 
     @classmethod
-    def trouver_evenements(cls, dte_ref, lat, lon, astre="soleil"):
+    def find_events(cls, dte_ref, lat, lon, body="sun"):
         """
-        Détecte les événements journaliers d'un astre par balayage minute par minute.
+        Detects daily events of a celestial body by scanning minute by minute.
 
-        Parcourt les 1440 minutes de la journée et détecte les franchissements
-        de seuils d'altitude caractéristiques. La résolution temporelle est d'une minute.
+        Scans all 1440 minutes of the day and detects crossings of characteristic
+        altitude thresholds. Temporal resolution is one minute.
 
-        Seuils détectés :
-        - Soleil : lever/coucher (0° + correction 0.833°), aube/crépuscule civil (-6°),
-                   nautique (-12°) et astronomique (-18°).
-        - Lune   : lever/coucher (altitude corrigée réfraction + parallaxe = 0°).
+        Detected thresholds:
+        - Sun: rise/set (0° + correction 0.833°), civil, nautical and astronomical twilights.
+        - Moon: rise/set (corrected altitude for refraction + parallax = 0°).
 
         Args:
-            dte_ref (datetime): N'importe quelle date-heure dans la journée d'intérêt.
-            lat (float): Latitude de l'observateur en degrés.
-            lon (float): Longitude de l'observateur en degrés.
-            astre (str): "soleil" ou "lune". Défaut : "soleil".
+            dte_ref (datetime): Any date-time within the day of interest.
+            lat (float): Observer's latitude in degrees.
+            lon (float): Observer's longitude in degrees.
+            body (str): "sun" or "moon". Default: "sun".
 
         Returns:
-            dict: Dictionnaire avec les clés suivantes (valeur None si non détecté) :
-                - 'lever'     (datetime): Heure du lever.
-                - 'coucher'   (datetime): Heure du coucher.
-                - 'culm'      (datetime): Heure de la culmination (altitude maximale).
-                - 'aube_civ'  (datetime): Aube civile — Soleil à -6° (soleil uniquement).
-                - 'crep_civ'  (datetime): Crépuscule civil — Soleil à -6° (soleil uniquement).
-                - 'aube_naut' (datetime): Aube nautique — Soleil à -12° (soleil uniquement).
-                - 'crep_naut' (datetime): Crépuscule nautique — Soleil à -12° (soleil uniquement).
-                - 'aube_astro'(datetime): Aube astronomique — Soleil à -18° (soleil uniquement).
-                - 'crep_astro'(datetime): Crépuscule astronomique — Soleil à -18° (soleil uniquement).
+            dict: Dictionary with the following keys (value is None if not detected):
+                - 'rise'     (datetime): Time of rising.
+                - 'set'      (datetime): Time of setting.
+                - 'transit'  (datetime): Time of transit (maximum altitude).
+                - 'dawn_civ' (datetime): Civil dawn — Sun at -6° (sun only).
+                - 'dusk_civ' (datetime): Civil dusk — Sun at -6° (sun only).
+                - 'dawn_naut'(datetime): Nautical dawn — Sun at -12° (sun only).
+                - 'dusk_naut'(datetime): Nautical dusk — Sun at -12° (sun only).
+                - 'dawn_astro'(datetime): Astronomical dawn — Sun at -18° (sun only).
+                - 'dusk_astro'(datetime): Astronomical dusk — Sun at -18° (sun only).
         """
         events = {
-            'lever': None, 'coucher': None, 'culm': None,
-            'aube_civ': None,  'crep_civ': None,   # Civil       (-6°)
-            'aube_naut': None, 'crep_naut': None,   # Nautique   (-12°)
-            'aube_astro': None,'crep_astro': None,  # Astronomique(-18°)
+            'rise': None, 'set': None, 'transit': None,
+            'dawn_civ': None,  'dusk_civ': None,
+            'dawn_naut': None, 'dusk_naut': None,
+            'dawn_astro': None,'dusk_astro': None,
         }
         max_alt = -90
         prev_alt = None
@@ -549,85 +546,85 @@ class MeeusEngine:
 
         for m in range(1440):
             dt = start_day + timedelta(minutes=m)
-            jd = cls.jour_julien(dt)
-            t = cls.siecle_julien2000(dt)
+            jd = cls.julian_day(dt)
+            t = cls.julian_century_j2000(dt)
 
-            if astre == "soleil":
-                s_l, _ = cls.position_soleil(t)
-                ra, dec = cls.ecliptique_vers_equatorial(s_l, 0, t)
-                alt, _ = cls.equatorial_vers_horizontal(jd, lat, lon, ra, dec)
-                alt_test = alt + _CORRECTION_HORIZON_SOLEIL
+            if body == "sun":
+                s_l, _ = cls.sun_position(t)
+                ra, dec = cls.ecliptic_to_equatorial(s_l, 0, t)
+                alt, _ = cls.equatorial_to_horizontal(jd, lat, lon, ra, dec)
+                alt_test = alt + _HORIZON_CORRECTION_SUN
             else:
-                m_l, m_b, m_p = cls.position_lune(t)
-                ra, dec = cls.ecliptique_vers_equatorial(m_l, m_b, t)
-                alt, _ = cls.equatorial_vers_horizontal(jd, lat, lon, ra, dec)
-                alt_test = cls.correction_elevation(alt, m_p)
+                m_l, m_b, m_p = cls.moon_position(t)
+                ra, dec = cls.ecliptic_to_equatorial(m_l, m_b, t)
+                alt, _ = cls.equatorial_to_horizontal(jd, lat, lon, ra, dec)
+                alt_test = cls.elevation_correction(alt, m_p)
 
-            # Recherche de culmination
+            # Search for transit
             if alt_test > max_alt:
                 max_alt = alt_test
-                events['culm'] = dt
+                events['transit'] = dt
 
-            # Détection de franchissements d'horizon et crépuscules
+            # Detection of horizon and twilight crossings
             if prev_alt is not None:
                 if prev_alt < 0 and alt_test >= 0:
-                    events['lever'] = dt
+                    events['rise'] = dt
                 elif prev_alt > 0 and alt_test <= 0:
-                    events['coucher'] = dt
+                    events['set'] = dt
 
-                if astre == "soleil":
+                if body == "sun":
                     if prev_alt < -6 and alt_test >= -6:
-                        events['aube_civ'] = dt
+                        events['dawn_civ'] = dt
                     elif prev_alt > -6 and alt_test <= -6:
-                        events['crep_civ'] = dt
+                        events['dusk_civ'] = dt
 
                     if prev_alt < -12 and alt_test >= -12:
-                        events['aube_naut'] = dt
+                        events['dawn_naut'] = dt
                     elif prev_alt > -12 and alt_test <= -12:
-                        events['crep_naut'] = dt
+                        events['dusk_naut'] = dt
 
                     if prev_alt < -18 and alt_test >= -18:
-                        events['aube_astro'] = dt
+                        events['dawn_astro'] = dt
                     elif prev_alt > -18 and alt_test <= -18:
-                        events['crep_astro'] = dt
+                        events['dusk_astro'] = dt
 
             prev_alt = alt_test
 
         return events
 
     @classmethod
-    def position_planete(cls, t, nom):
+    def planet_position(cls, t, name):
         """
-        Calcule la position géocentrique d'une planète en coordonnées équatoriales.
+        Calculates the geocentric position of a planet in equatorial coordinates.
 
-        Utilise les éléments orbitaux moyens de Meeus (App. II) et l'équation de
-        Kepler pour obtenir les coordonnées héliocentriques, puis soustrait la
-        position de la Terre pour obtenir les coordonnées géocentriques.
+        Uses Meeus's mean orbital elements (App. II) and Kepler's equation to
+        obtain heliocentric coordinates, then subtracts Earth's position to get
+        geocentric coordinates.
 
-        Précision : ~1–2° selon la planète (suffisant pour l'affichage et l'orrery).
+        Precision: ~1–2° depending on planet (sufficient for display and orrery).
 
         Args:
-            t (float): Siècles juliens depuis J2000.0 (via siecle_julien2000).
-            nom (str): Nom de la planète — "Venus", "Mars", "Jupiter" ou "Saturne".
+            t (float): Julian centuries since J2000.0 (via julian_century_j2000).
+            name (str): Planet name — "Venus", "Mars", "Jupiter" or "Saturn".
 
         Returns:
             tuple[float, float, float]:
-                - ra   (float): Ascension droite en heures décimales [0, 24[.
-                - dec  (float): Déclinaison en degrés [-90, +90].
-                - dist (float): Distance géocentrique en Unités Astronomiques (UA).
+                - ra   (float): Right ascension in decimal hours [0, 24[.
+                - dec  (float): Declination in degrees [-90, +90].
+                - dist (float): Geocentric distance in Astronomical Units (AU).
 
-        Référence : Meeus, chap. 33 / Appendice II.
+        Reference: Meeus, chap. 33 / Appendix II.
         """
-        L0, L1, a, e0, e1, i_deg, omega_deg, peri_deg = _ELEMENTS_ORBITAUX[nom]
+        L0, L1, a, e0, e1, i_deg, omega_deg, peri_deg = _ORBITAL_ELEMENTS[name]
 
-        # Éléments à l'instant t
+        # Elements at instant t
         L   = cls.mod360(L0 + L1 * t)
         e   = e0 + e1 * t
         i   = math.radians(i_deg)
-        omega = math.radians(omega_deg)  # longitude du nœud ascendant
-        peri  = math.radians(peri_deg)   # longitude du périhélie
+        omega = math.radians(omega_deg)
+        peri  = math.radians(peri_deg)
 
-        # Anomalie moyenne → résolution de l'équation de Kepler (Newton-Raphson)
+        # Mean anomaly → solve Kepler's equation (Newton-Raphson)
         M = math.radians(cls.mod360(L - peri_deg))
         E = M
         for _ in range(50):
@@ -636,61 +633,61 @@ class MeeusEngine:
             if abs(dE) < 1e-10:
                 break
 
-        # Vraie anomalie et distance héliocentrique
+        # True anomaly and heliocentric distance
         nu = 2.0 * math.atan2(
             math.sqrt(1.0 + e) * math.sin(E / 2.0),
             math.sqrt(1.0 - e) * math.cos(E / 2.0))
         r = a * (1.0 - e * math.cos(E))
 
-        # Longitude écliptique héliocentrique (degrés)
+        # Heliocentric ecliptic longitude (degrees)
         lam = cls.mod360(math.degrees(peri + nu))
 
-        # Latitude écliptique héliocentrique (approximation à 1er ordre)
+        # Heliocentric ecliptic latitude (first-order approximation)
         beta = math.degrees(
             math.asin(math.sin(i) * math.sin(math.radians(lam) - omega)))
 
-        # Coordonnées rectangulaires héliocentriques de la planète
+        # Heliocentric rectangular coordinates of planet
         lr, br = math.radians(lam), math.radians(beta)
         xp = r * math.cos(br) * math.cos(lr)
         yp = r * math.cos(br) * math.sin(lr)
         zp = r * math.sin(br)
 
-        # Position héliocentrique de la Terre
-        # (longitude_soleil_geocentrique + 180° = longitude_héliocentrique_Terre)
-        ls, r_earth = cls.position_soleil(t)
+        # Heliocentric position of Earth
+        # (geocentric sun longitude + 180° = heliocentric Earth longitude)
+        ls, r_earth = cls.sun_position(t)
         ls_r = math.radians(cls.mod360(ls + 180.0))
         xe = r_earth * math.cos(ls_r)
         ye = r_earth * math.sin(ls_r)
         ze = 0.0
 
-        # Vecteur géocentrique écliptique
+        # Geocentric ecliptic vector
         dx, dy, dz = xp - xe, yp - ye, zp - ze
         dist = math.sqrt(dx * dx + dy * dy + dz * dz)
 
         lam_geo  = cls.mod360(math.degrees(math.atan2(dy, dx)))
         beta_geo = math.degrees(math.atan2(dz, math.sqrt(dx * dx + dy * dy)))
 
-        # Conversion écliptique → équatorial
-        ra, dec = cls.ecliptique_vers_equatorial(lam_geo, beta_geo, t)
+        # Convert ecliptic → equatorial
+        ra, dec = cls.ecliptic_to_equatorial(lam_geo, beta_geo, t)
         return ra, dec, dist
 
     # ──────────────────────────────────────────────────────────────────
-    # SÉPARATION ANGULAIRE, CONJONCTIONS ET ÉCLIPSES
+    # ANGULAR SEPARATION, CONJUNCTIONS AND ECLIPSES
     # ──────────────────────────────────────────────────────────────────
 
     @staticmethod
-    def separation_angulaire(ra1_h, dec1_deg, ra2_h, dec2_deg):
+    def angular_separation(ra1_h, dec1_deg, ra2_h, dec2_deg):
         """
-        Calcule la séparation angulaire entre deux objets célestes.
+        Calculates the angular separation between two celestial objects.
 
         Args:
-            ra1_h, dec1_deg: Coordonnées équatoriales du 1er objet (heures, degrés).
-            ra2_h, dec2_deg: Coordonnées équatoriales du 2e objet (heures, degrés).
+            ra1_h, dec1_deg: Equatorial coordinates of 1st object (hours, degrees).
+            ra2_h, dec2_deg: Equatorial coordinates of 2nd object (hours, degrees).
 
         Returns:
-            float: Séparation angulaire en degrés [0, 180].
+            float: Angular separation in degrees [0, 180].
 
-        Référence : Meeus, chap. 17.
+        Reference: Meeus, chap. 17.
         """
         ra1 = math.radians(ra1_h * 15.0)
         ra2 = math.radians(ra2_h * 15.0)
@@ -702,208 +699,207 @@ class MeeusEngine:
         return math.degrees(math.acos(cos_d))
 
     @classmethod
-    def rechercher_conjonctions(cls, dte_debut, nb_jours=365):
+    def find_conjunctions(cls, dte_start, num_days=365):
         """
-        Recherche les conjonctions et oppositions planétaires sur une période.
+        Searches for planetary conjunctions and oppositions over a period.
 
-        Scanne jour par jour et détecte les minima de séparation angulaire
-        entre paires d'astres (< 5°) ainsi que les oppositions des planètes
-        extérieures (élongation au Soleil > 175°).
+        Scans day by day and detects minima of angular separation between
+        celestial body pairs (< 5°) and oppositions of outer planets
+        (elongation from Sun > 175°).
 
         Args:
-            dte_debut (datetime): Date de début de la recherche.
-            nb_jours (int): Durée en jours (défaut 365).
+            dte_start (datetime): Start date for search.
+            num_days (int): Duration in days (default 365).
 
         Returns:
-            list[dict]: Liste triée par date, chaque dict contient :
-                'date' (datetime), 'type' ('conjonction'|'opposition'),
-                'objets' (tuple[str, str]), 'separation' (float, degrés),
+            list[dict]: List sorted by date, each dict contains:
+                'date' (datetime), 'type' ('conjunction'|'opposition'),
+                'bodies' (tuple[str, str]), 'separation' (float, degrees),
                 'details' (str).
         """
         from datetime import datetime
 
-        planetes = ["Venus", "Mars", "Jupiter", "Saturne"]
-        paires = []
-        for i, a in enumerate(planetes):
-            for b in planetes[i + 1:]:
-                paires.append((a, b))
+        planets = ["Venus", "Mars", "Jupiter", "Saturn"]
+        pairs = []
+        for i, a in enumerate(planets):
+            for b in planets[i + 1:]:
+                pairs.append((a, b))
 
-        seuil_conj = 5.0
-        seuil_oppo = 175.0
-        resultats = []
+        conjunction_threshold = 5.0
+        opposition_threshold = 175.0
+        results = []
 
         prev_seps = {}
         prev_elongs = {}
 
-        for jour in range(nb_jours):
-            dte = dte_debut + timedelta(days=jour)
-            jd = cls.jour_julien(dte)
-            t = cls.siecle_julien2000(dte)
+        for day in range(num_days):
+            dte = dte_start + timedelta(days=day)
+            jd = cls.julian_day(dte)
+            t = cls.julian_century_j2000(dte)
 
-            s_l, _ = cls.position_soleil(t)
-            s_ra, s_dec = cls.ecliptique_vers_equatorial(s_l, 0, t)
+            s_l, _ = cls.sun_position(t)
+            s_ra, s_dec = cls.ecliptic_to_equatorial(s_l, 0, t)
 
             positions = {}
-            for pname in planetes:
-                ra, dec, _ = cls.position_planete(t, pname)
+            for pname in planets:
+                ra, dec, _ = cls.planet_position(t, pname)
                 positions[pname] = (ra, dec)
 
-            # Conjonctions planète-planète
-            for a, b in paires:
+            # Planet-planet conjunctions
+            for a, b in pairs:
                 ra_a, dec_a = positions[a]
                 ra_b, dec_b = positions[b]
-                sep = cls.separation_angulaire(ra_a, dec_a, ra_b, dec_b)
-                cle = (a, b)
-                if cle in prev_seps and len(prev_seps[cle]) >= 2:
-                    p2, p1 = prev_seps[cle]
-                    if p1 < p2 and p1 < sep and p1 < seuil_conj:
-                        resultats.append({
+                sep = cls.angular_separation(ra_a, dec_a, ra_b, dec_b)
+                key = (a, b)
+                if key in prev_seps and len(prev_seps[key]) >= 2:
+                    p2, p1 = prev_seps[key]
+                    if p1 < p2 and p1 < sep and p1 < conjunction_threshold:
+                        results.append({
                             'date': dte - timedelta(days=1),
-                            'type': 'conjonction',
-                            'objets': (a, b),
+                            'type': 'conjunction',
+                            'bodies': (a, b),
                             'separation': p1,
                             'details': f"{a} – {b} : {p1:.1f}°",
                         })
-                prev_seps[cle] = (prev_seps.get(cle, (sep,))[-1], sep)
+                prev_seps[key] = (prev_seps.get(key, (sep,))[-1], sep)
 
-            # Conjonctions planète-Soleil et oppositions
-            for pname in planetes:
+            # Planet-Sun conjunctions and oppositions
+            for pname in planets:
                 ra_p, dec_p = positions[pname]
-                elong = cls.separation_angulaire(ra_p, dec_p, s_ra, s_dec)
-                cle = pname
-                if cle in prev_elongs and len(prev_elongs[cle]) >= 2:
-                    p2, p1 = prev_elongs[cle]
-                    # Conjonction au Soleil (minimum d'élongation)
-                    if p1 < p2 and p1 < elong and p1 < seuil_conj:
-                        resultats.append({
+                elong = cls.angular_separation(ra_p, dec_p, s_ra, s_dec)
+                key = pname
+                if key in prev_elongs and len(prev_elongs[key]) >= 2:
+                    p2, p1 = prev_elongs[key]
+                    # Conjunction with Sun (minimum elongation)
+                    if p1 < p2 and p1 < elong and p1 < conjunction_threshold:
+                        results.append({
                             'date': dte - timedelta(days=1),
-                            'type': 'conjonction',
-                            'objets': (pname, 'Soleil'),
+                            'type': 'conjunction',
+                            'bodies': (pname, 'Sun'),
                             'separation': p1,
-                            'details': f"{pname} en conjonction solaire : {p1:.1f}°",
+                            'details': f"{pname} in solar conjunction: {p1:.1f}°",
                         })
-                    # Opposition (maximum d'élongation > seuil, planètes extérieures)
-                    if (pname in ("Mars", "Jupiter", "Saturne")
-                            and p1 > p2 and p1 > elong and p1 > seuil_oppo):
-                        resultats.append({
+                    # Opposition (maximum elongation > threshold, outer planets)
+                    if (pname in ("Mars", "Jupiter", "Saturn")
+                            and p1 > p2 and p1 > elong and p1 > opposition_threshold):
+                        results.append({
                             'date': dte - timedelta(days=1),
                             'type': 'opposition',
-                            'objets': (pname, 'Soleil'),
+                            'bodies': (pname, 'Sun'),
                             'separation': p1,
-                            'details': f"{pname} en opposition : {p1:.1f}°",
+                            'details': f"{pname} in opposition: {p1:.1f}°",
                         })
-                prev_elongs[cle] = (prev_elongs.get(cle, (elong,))[-1], elong)
+                prev_elongs[key] = (prev_elongs.get(key, (elong,))[-1], elong)
 
-        resultats.sort(key=lambda r: r['date'])
-        return resultats
+        results.sort(key=lambda r: r['date'])
+        return results
 
     @classmethod
-    def _trouver_syzygie(cls, dte_approx, cible_phase=0):
+    def _find_syzygy(cls, dte_approx, target_phase=0):
         """
-        Affine la date d'une syzygie (nouvelle lune ou pleine lune).
+        Refines the date of a syzygy (new moon or full moon).
 
         Args:
-            dte_approx (datetime): Date approximative (±2 jours).
-            cible_phase (float): 0 pour nouvelle lune, 180 pour pleine lune.
+            dte_approx (datetime): Approximate date (±2 days).
+            target_phase (float): 0 for new moon, 180 for full moon.
 
         Returns:
-            datetime: Date raffinée (précision ~1 minute).
+            datetime: Refined date (precision ~1 minute).
         """
-        meilleur_dt = dte_approx
-        meilleur_diff = 999.0
+        best_dt = dte_approx
+        best_diff = 999.0
 
-        # Passe 1 : scan par pas de 1h sur ±2 jours
+        # Pass 1: scan by 1h steps over ±2 days
         for h in range(-48, 49):
             dt = dte_approx + timedelta(hours=h)
-            t = cls.siecle_julien2000(dt)
-            s_l, _ = cls.position_soleil(t)
-            m_l, _, _ = cls.position_lune(t)
+            t = cls.julian_century_j2000(dt)
+            s_l, _ = cls.sun_position(t)
+            m_l, _, _ = cls.moon_position(t)
             phase = cls.mod360(m_l - s_l)
-            diff = min(abs(phase - cible_phase), 360 - abs(phase - cible_phase))
-            if diff < meilleur_diff:
-                meilleur_diff = diff
-                meilleur_dt = dt
+            diff = min(abs(phase - target_phase), 360 - abs(phase - target_phase))
+            if diff < best_diff:
+                best_diff = diff
+                best_dt = dt
 
-        # Passe 2 : raffinage par pas de 1 min sur ±1h
-        centre = meilleur_dt
-        meilleur_diff = 999.0
+        # Pass 2: refine by 1 min steps over ±1h
+        center = best_dt
+        best_diff = 999.0
         for m in range(-60, 61):
-            dt = centre + timedelta(minutes=m)
-            t = cls.siecle_julien2000(dt)
-            s_l, _ = cls.position_soleil(t)
-            m_l, _, _ = cls.position_lune(t)
+            dt = center + timedelta(minutes=m)
+            t = cls.julian_century_j2000(dt)
+            s_l, _ = cls.sun_position(t)
+            m_l, _, _ = cls.moon_position(t)
             phase = cls.mod360(m_l - s_l)
-            diff = min(abs(phase - cible_phase), 360 - abs(phase - cible_phase))
-            if diff < meilleur_diff:
-                meilleur_diff = diff
-                meilleur_dt = dt
+            diff = min(abs(phase - target_phase), 360 - abs(phase - target_phase))
+            if diff < best_diff:
+                best_diff = diff
+                best_dt = dt
 
-        return meilleur_dt
+        return best_dt
 
     @classmethod
-    def rechercher_eclipses(cls, dte_debut, nb_mois=12):
+    def find_eclipses(cls, dte_start, num_months=12):
         """
-        Recherche les éclipses solaires et lunaires sur une période.
+        Searches for solar and lunar eclipses over a period.
 
-        Scanne chaque lunaison pour trouver les nouvelles et pleines lunes,
-        puis vérifie si la latitude écliptique de la Lune est assez faible
-        pour qu'une éclipse se produise (seuils de Meeus, chap. 54).
+        Scans each lunation for new and full moons, then checks if the Moon's
+        ecliptic latitude is low enough for an eclipse to occur (Meeus thresholds, chap. 54).
 
         Args:
-            dte_debut (datetime): Date de début.
-            nb_mois (int): Nombre de mois synodiques à scanner (défaut 12).
+            dte_start (datetime): Start date.
+            num_months (int): Number of synodic months to scan (default 12).
 
         Returns:
-            list[dict]: Liste triée par date, chaque dict contient :
-                'date' (datetime), 'type' ('solaire'|'lunaire'),
-                'certitude' ('certain'|'possible'|'pénombral'),
-                'latitude_lune' (float, degrés),
+            list[dict]: List sorted by date, each dict contains:
+                'date' (datetime), 'type' ('solar'|'lunar'),
+                'certainty' ('certain'|'possible'|'penumbral'),
+                'moon_latitude' (float, degrees),
                 'details' (str).
         """
-        mois_synodique = 29.530588
-        resultats = []
+        synodic_month = 29.530588
+        results = []
 
-        for i in range(nb_mois):
-            # Date approx de la nouvelle lune
-            dte_nl = dte_debut + timedelta(days=i * mois_synodique)
-            nl = cls._trouver_syzygie(dte_nl, cible_phase=0)
+        for i in range(num_months):
+            # New moon date
+            dte_nm = dte_start + timedelta(days=i * synodic_month)
+            nm = cls._find_syzygy(dte_nm, target_phase=0)
 
-            t_nl = cls.siecle_julien2000(nl)
-            _, b_nl, _ = cls.position_lune(t_nl)
+            t_nm = cls.julian_century_j2000(nm)
+            _, b_nm, _ = cls.moon_position(t_nm)
 
-            if abs(b_nl) < 1.58:
-                certitude = 'certain' if abs(b_nl) < 0.90 else 'possible'
-                resultats.append({
-                    'date': nl,
-                    'type': 'solaire',
-                    'certitude': certitude,
-                    'latitude_lune': b_nl,
-                    'details': (f"Éclipse solaire ({certitude}) — "
-                                f"lat. Lune : {b_nl:+.2f}°"),
+            if abs(b_nm) < 1.58:
+                certainty = 'certain' if abs(b_nm) < 0.90 else 'possible'
+                results.append({
+                    'date': nm,
+                    'type': 'solar',
+                    'certainty': certainty,
+                    'moon_latitude': b_nm,
+                    'details': (f"Solar eclipse ({certainty}) — "
+                                f"Moon lat: {b_nm:+.2f}°"),
                 })
 
-            # Date approx de la pleine lune (~14.76 jours après NL)
-            dte_pl = dte_nl + timedelta(days=mois_synodique / 2)
-            pl = cls._trouver_syzygie(dte_pl, cible_phase=180)
+            # Full moon date (~14.76 days after NM)
+            dte_fm = dte_nm + timedelta(days=synodic_month / 2)
+            fm = cls._find_syzygy(dte_fm, target_phase=180)
 
-            t_pl = cls.siecle_julien2000(pl)
-            _, b_pl, _ = cls.position_lune(t_pl)
+            t_fm = cls.julian_century_j2000(fm)
+            _, b_fm, _ = cls.moon_position(t_fm)
 
-            if abs(b_pl) < 1.58:
-                if abs(b_pl) < 0.90:
-                    certitude = 'certain'
-                elif abs(b_pl) < 1.09:
-                    certitude = 'pénombral'
+            if abs(b_fm) < 1.58:
+                if abs(b_fm) < 0.90:
+                    certainty = 'certain'
+                elif abs(b_fm) < 1.09:
+                    certainty = 'penumbral'
                 else:
-                    certitude = 'possible'
-                resultats.append({
-                    'date': pl,
-                    'type': 'lunaire',
-                    'certitude': certitude,
-                    'latitude_lune': b_pl,
-                    'details': (f"Éclipse lunaire ({certitude}) — "
-                                f"lat. Lune : {b_pl:+.2f}°"),
+                    certainty = 'possible'
+                results.append({
+                    'date': fm,
+                    'type': 'lunar',
+                    'certainty': certainty,
+                    'moon_latitude': b_fm,
+                    'details': (f"Lunar eclipse ({certainty}) — "
+                                f"Moon lat: {b_fm:+.2f}°"),
                 })
 
-        resultats.sort(key=lambda r: r['date'])
-        return resultats
+        results.sort(key=lambda r: r['date'])
+        return results
