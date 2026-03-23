@@ -602,13 +602,17 @@ class MeeusEngine:
     # ──────────────────────────────────────────────────────────────────
 
     @classmethod
-    def moon_position(cls, t):
+    def _moon_base_series(cls, t):
         """
-        Moon position — base series chap. 47 (~0.01°).
-        Kept for trajectory and event calculations.
+        Compute fundamental lunar arguments and base Meeus ch.47 series sums.
+        Shared by moon_position() and moon_position_elp2000().
 
         Returns:
-            tuple[float, float, float]: (longitude°, latitude°, parallax°)
+            tuple: (lp, f, mp, a1, a2, a3, d_r, m_r, mp_r, f_r, e, sl, sr, sb)
+                lp, f, mp, a1, a2, a3 : fundamental arguments in degrees
+                d_r, m_r, mp_r, f_r   : d, m, mp, f converted to radians
+                e                     : eccentricity correction factor
+                sl, sr, sb            : partial sums (before additive corrections)
         """
         t2, t3 = t*t, t*t*t
 
@@ -641,6 +645,20 @@ class MeeusEngine:
             if amp == 0: continue
             ec = e**abs(cM) if cM else 1.0
             sb += amp * ec * math.sin(cD*d_r + cM*m_r + cMp*mp_r + cF*f_r)
+
+        return lp, f, mp, a1, a2, a3, d_r, m_r, mp_r, f_r, e, sl, sr, sb
+
+    @classmethod
+    def moon_position(cls, t):
+        """
+        Moon position — base series chap. 47 (~0.01°).
+        Kept for trajectory and event calculations.
+
+        Returns:
+            tuple[float, float, float]: (longitude°, latitude°, parallax°)
+        """
+        lp, f, mp, a1, a2, a3, d_r, m_r, mp_r, f_r, e, sl, sr, sb = cls._moon_base_series(t)
+        dr = math.radians
 
         sl += 3958*math.sin(dr(a1)) + 1962*math.sin(dr(lp-f)) + 318*math.sin(dr(a2))
         sb += (-2235*math.sin(dr(lp)) + 382*math.sin(dr(a3))
@@ -668,36 +686,8 @@ class MeeusEngine:
 
         Reference: Meeus, chap. 47 + ELP2000-82B.
         """
-        t2, t3 = t*t, t*t*t
-
-        lp = cls.mod360(218.3164477 + 481267.88123421*t - 0.0015786*t2 + t3/538841.0    - t2**2/65194000.0)
-        d  = cls.mod360(297.8501921 + 445267.1114034 *t - 0.0018819*t2 + t3/545868.0    - t2**2/113065000.0)
-        m  = cls.mod360(357.5291092 + 35999.0502909  *t - 0.0001536*t2 + t3/24490000.0)
-        mp = cls.mod360(134.9633964 + 477198.8675055 *t + 0.0087414*t2 + t3/69699.0     - t2**2/14712000.0)
-        f  = cls.mod360(93.2720950  + 483202.0175233 *t - 0.0036539*t2 - t3/3526000.0   + t2**2/863310000.0)
-
-        a1 = cls.mod360(119.75 + 131.849*t)
-        a2 = cls.mod360(53.09  + 479264.290*t)
-        a3 = cls.mod360(313.45 + 481266.484*t)
-        e  = 1.0 - 0.002516*t - 0.0000074*t2
-
+        lp, f, mp, a1, a2, a3, d_r, m_r, mp_r, f_r, e, sl, sr, sb = cls._moon_base_series(t)
         dr = math.radians
-        d_r, m_r, mp_r, f_r = dr(d), dr(m), dr(mp), dr(f)
-        sl = sr = sb = 0.0
-
-        # Base series
-        for cD, cM, cMp, cF, amp in _MOON_LONGITUDE_TERMS:
-            if amp == 0: continue
-            ec = e**abs(cM) if cM else 1.0
-            sl += amp * ec * math.sin(cD*d_r + cM*m_r + cMp*mp_r + cF*f_r)
-        for cD, cM, cMp, cF, amp in _MOON_DISTANCE_TERMS:
-            if amp == 0: continue
-            ec = e**abs(cM) if cM else 1.0
-            sr += amp * ec * math.cos(cD*d_r + cM*m_r + cMp*mp_r + cF*f_r)
-        for cD, cM, cMp, cF, amp in _MOON_LATITUDE_TERMS:
-            if amp == 0: continue
-            ec = e**abs(cM) if cM else 1.0
-            sb += amp * ec * math.sin(cD*d_r + cM*m_r + cMp*mp_r + cF*f_r)
 
         # ELP2000 additional terms
         for cD, cM, cMp, cF, amp in _ELP2000_LON_ADD:

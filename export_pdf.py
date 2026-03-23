@@ -73,7 +73,7 @@ _LH        = 3.90 * mm
 _ML        = 12 * mm
 _MT        = 14 * mm
 _MB        = 12 * mm
-_COLS      = 76
+_COLS      = 110 # do not change this value without adjusting the rest of the layout and fonts!
 
 # ===========================================================================
 # ASCII BOX PRIMITIVES
@@ -139,7 +139,7 @@ class _PDF:
         fs = fs or _FS
         self.c.setFont(_FONT_BOLD if bold else _FONT, fs)
         self.c.setFillColor(color)
-        inner = _COLS - 2
+        inner = _COLS - 14
         self.c.drawString(self.x0, self.y, _V + text[:inner].center(inner) + _V)
         self.nl()
 

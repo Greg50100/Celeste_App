@@ -23,16 +23,18 @@ _SETTINGS_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "settings.json"
 )
 
-# ── Valeurs par défaut ────────────────────────────────────────────────
+# ── Valeurs par défaut ─────────────────────────────────────────────────────────
 
 _DEFAULTS = {
     # Apparence
-    "theme":          "mocha",      # mocha | latte | frappe
-    "lang":           "fr",         # code ISO 639-1
+    "theme":          "mocha",      # mocha | frape | latte
+    "lang":           "en",         # code ISO 639-1
     "time_format":    "24h",        # 24h | 12h
 
     # Lieu par défaut
-    "default_place":  "📍 Cherbourg-en-Cotentin",
+    "default_place":  "\U0001f4cd Cherbourg-en-Cotentin",
+    "default_lat":    49.6333,      # latitude par défaut
+    "default_lon":    -1.6167,      # longitude par défaut
     "default_utc":    0,            # offset UTC (-12 → +14)
     "auto_geoloc":    False,        # géoloc auto au lancement
 
@@ -45,11 +47,11 @@ _DEFAULTS = {
     "mag_limit":      6.0,          # magnitude limite pour les étoiles
 }
 
-# ── État interne ──────────────────────────────────────────────────────
+# ── État interne ───────────────────────────────────────────────────────────────
 
 _settings: dict = {}
 
-# ── API publique ──────────────────────────────────────────────────────
+# ── API publique ───────────────────────────────────────────────────────────────
 
 def load() -> dict:
     """Charge settings.json. Complète les clés manquantes avec les défauts."""

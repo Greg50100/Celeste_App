@@ -23,6 +23,9 @@ import os
 # ── Configuration ─────────────────────────────────────────────────────
 
 _LOCALES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locales")
+# Translation fallback language — used when a key is missing from the active locale.
+# This is NOT the UI default language (set via settings.py / Config.DEFAULT_LANG).
+# Keep as "fr" since the French locale is the reference/most complete file.
 _FALLBACK_LANG = "fr"
 
 # Métadonnées des langues supportées — nom natif affiché dans le sélecteur.
