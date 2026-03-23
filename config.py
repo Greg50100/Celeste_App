@@ -18,6 +18,9 @@ class Config:
     CustomTkinter and Matplotlib.
     """
 
+    # Default language (ISO 639-1) — overridden by settings.json or --lang CLI arg
+    DEFAULT_LANG = "en"
+
     # Backgrounds
     BG_MAIN   = "#1B1B25"   # Main dark background
     BG_PANEL  = "#222230"   # Panels and frames background
