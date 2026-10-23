@@ -218,6 +218,7 @@ class AstroApp(QMainWindow):
         for w in (self._lbl_pos, self._lbl_stars):
             sb.addWidget(w)
         sb.addPermanentWidget(self._lbl_time)
+        self._apply_styles()
 
     # ──────────────────────────────────────────────────────────────────────────
     # SIDEBAR
@@ -1087,16 +1088,37 @@ class AstroApp(QMainWindow):
         t   = MeeusEngine.julian_century_j2000(dte)
         ax2 = self.ax2
         ax2.clear()
-        ax2.set_facecolor(Config.BG_PANEL)
-        ax2.set_title("Carte du ciel", color=Config.FG_WHITE, fontsize=11, pad=12)
-        ax2.tick_params(colors=Config.FG_LABEL, labelsize=8)
+        # Fond ciel nocturne
+        self.fig2.patch.set_facecolor('#04040E')
+        ax2.set_facecolor('#06061A')
+        ax2.set_title("Carte du ciel", color='#C8D4FF',
+                      fontsize=11, fontweight='bold', pad=14)
+        ax2.tick_params(axis='x', colors='#7788AA', labelsize=9, pad=5)
         ax2.set_theta_zero_location("N")
         ax2.set_theta_direction(-1)
         ax2.set_rlim(0, 1)
         ax2.yaxis.set_visible(False)
         ax2.set_xticks([math.radians(a) for a in range(0, 360, 45)])
         ax2.set_xticklabels(["N", "NE", "E", "SE", "S", "SO", "O", "NO"],
-                            color=Config.FG_LABEL)
+                            color='#8899BB', fontweight='bold')
+        ax2.set_rgrids([])
+        ax2.grid(color='#0F1E35', linewidth=0.4, alpha=0.6)
+        # Anneaux d'altitude 0° / 30° / 60°
+        _ang = [i * math.tau / 360 for i in range(361)]
+        for _adeg, _lw, _col, _alp, _lbl in [
+            (0,  1.8, '#2A4466', 0.9, "Horizon"),
+            (30, 0.7, '#152840', 0.8, "30\u00b0"),
+            (60, 0.7, '#152840', 0.7, "60\u00b0"),
+        ]:
+            _rr = (90 - _adeg) / 90
+            ax2.plot(_ang, [_rr] * 361,
+                     color=_col, linewidth=_lw, alpha=_alp, zorder=1)
+            ax2.annotate(_lbl, xy=(math.radians(222), _rr),
+                         color=_col, fontsize=6.5, ha='center',
+                         annotation_clip=True)
+        # Zenith
+        ax2.plot(0, 0, '+', color='#445566', markersize=12,
+                 markeredgewidth=1.5, zorder=4)
         self.visible_stars      = []
         self._star_scatter_data = []
         for sname, (ra_h, dec_d, mag) in _STARS.items():
@@ -1109,7 +1131,8 @@ class AstroApp(QMainWindow):
             size  = max(2, (mag_limit - mag + 1) * 8)
             alpha = min(1.0, max(0.4, 1.0 - mag / 8.0))
             ax2.plot(theta, r, "o", color=Config.FG_WHITE,
-                     markersize=size, alpha=alpha, zorder=3)
+                     markersize=size, alpha=alpha, zorder=3,
+                     markeredgewidth=0)
 
             if mag < 2.5:
                 ax2.annotate(sname, xy=(theta, r),
@@ -1136,20 +1159,27 @@ class AstroApp(QMainWindow):
                          color=Config.GRID_COLOR,
                          linewidth=0.7, alpha=0.4, zorder=1)
 
-        # Soleil
-        ax2.plot(math.radians(s_az), (90 - max(s_alt, 0)) / 90,
-                 "*", color=Config.FG_SUN, markersize=14, zorder=6)
-        ax2.annotate("Soleil",
-                     xy=(math.radians(s_az), (90 - max(s_alt, 0)) / 90),
-                     xytext=(math.radians(s_az) + 0.05, (90 - max(s_alt, 0)) / 90 + 0.05),
-                     color=Config.FG_SUN, fontsize=8, annotation_clip=False)
-        # Lune
-        ax2.plot(math.radians(m_az), (90 - max(m_alt, 0)) / 90,
-                 "o", color=Config.FG_MOON, markersize=10, zorder=6)
-        ax2.annotate("Lune",
-                     xy=(math.radians(m_az), (90 - max(m_alt, 0)) / 90),
-                     xytext=(math.radians(m_az) + 0.05, (90 - max(m_alt, 0)) / 90 + 0.05),
-                     color=Config.FG_MOON, fontsize=8, annotation_clip=False)
+        # Soleil (avec halo)
+        _s_r, _s_th = (90 - max(s_alt, 0)) / 90, math.radians(s_az)
+        ax2.plot(_s_th, _s_r, "o", color=Config.FG_SUN,
+                 markersize=28, alpha=0.12, zorder=5, markeredgewidth=0)
+        ax2.plot(_s_th, _s_r, "*", color=Config.FG_SUN,
+                 markersize=16, zorder=6, markeredgewidth=0.5,
+                 markeredgecolor='#FFD080')
+        ax2.annotate("\u2600 Soleil", xy=(_s_th, _s_r),
+                     xytext=(_s_th + 0.07, _s_r + 0.06),
+                     color=Config.FG_SUN, fontsize=8, fontweight='bold',
+                     annotation_clip=False)
+        # Lune (avec halo)
+        _m_r, _m_th = (90 - max(m_alt, 0)) / 90, math.radians(m_az)
+        ax2.plot(_m_th, _m_r, "o", color=Config.FG_MOON,
+                 markersize=22, alpha=0.13, zorder=5, markeredgewidth=0)
+        ax2.plot(_m_th, _m_r, "o", color=Config.FG_MOON,
+                 markersize=11, zorder=6, markeredgewidth=0)
+        ax2.annotate("\U0001f319 Lune", xy=(_m_th, _m_r),
+                     xytext=(_m_th + 0.07, _m_r + 0.06),
+                     color=Config.FG_MOON, fontsize=8, fontweight='bold',
+                     annotation_clip=False)
         # Planetes visibles
         self.visible_planets_map = []
         for pname, style in _PLANET_MAP_STYLE.items():
@@ -1334,34 +1364,65 @@ class AstroApp(QMainWindow):
                        color=Config.FG_LABEL))
         else:
             for ec in eclipses:
-                row   = QWidget()
-                row_l = QHBoxLayout(row)
-                row_l.setContentsMargins(8, 4, 8, 4)
-
                 etype = ec.get("type", "?")
                 edate = ec.get("date", "")
-                emag  = ec.get("magnitude", None)
-                esub  = ec.get("sub_type", "")
-                if isinstance(edate, datetime):
-                    edate = edate.strftime("%d/%m/%Y %H:%M UT")
-                is_solar  = (etype == "solar")
-                color     = Config.FG_SUN if is_solar else Config.FG_MOON
-                icon      = "\u2600" if is_solar else "\U0001f311"
-                lbl_txt   = f"{icon}  {etype.capitalize()}"
+                emag  = ec.get("magnitude",    None)
+                esub  = ec.get("sub_type",     "")
+                ecert = ec.get("certainty",    "")
+                edur  = ec.get("duration_min", None)
+                elat  = ec.get("moon_latitude", None)
+                edate_s = (edate.strftime("%d/%m/%Y  %H:%M UT")
+                           if isinstance(edate, datetime) else str(edate))
+                is_solar = (etype == "solar")
+                acc_col  = Config.FG_SUN if is_solar else Config.FG_MOON
+                icon     = "\u2600" if is_solar else "\U0001f311"
+                title    = (f"{icon}  Eclipse "
+                            f"{'Solaire' if is_solar else 'Lunaire'}")
                 if esub:
-                    lbl_txt += f" ({esub})"
-                lbl_type = _label(lbl_txt, bold=True, color=color)
-                lbl_type.setFixedWidth(240)
-                lbl_date = _label(str(edate), color=Config.FG_WHITE)
-                row_l.addWidget(lbl_type)
-                row_l.addWidget(lbl_date)
+                    title += f"  \u2014  {esub.capitalize()}"
+                # Carte verticale avec bordure coloree
+                card = QWidget()
+                card.setStyleSheet(
+                    f"background-color:{Config.BG_PANEL};"
+                    f"border:1px solid {Config.GRID_COLOR};"
+                    f"border-left:3px solid {acc_col};"
+                    f"border-radius:6px; margin:3px; padding:2px;")
+                card_l = QVBoxLayout(card)
+                card_l.setSpacing(4)
+                card_l.setContentsMargins(10, 6, 10, 6)
+                # Ligne 1 : titre + date + certitude
+                r1 = QWidget()
+                r1_l = QHBoxLayout(r1)
+                r1_l.setContentsMargins(0, 0, 0, 0)
+                lbl_t = _label(title, bold=True, color=acc_col)
+                lbl_t.setFixedWidth(270)
+                r1_l.addWidget(lbl_t)
+                r1_l.addWidget(_label(edate_s, bold=True,
+                                      color=Config.FG_WHITE))
+                if ecert:
+                    c_col = (Config.FG_GREEN if ecert == "certain"
+                             else Config.FG_LABEL)
+                    r1_l.addWidget(_label(f"  [{ecert}]", color=c_col))
+                r1_l.addStretch()
+                card_l.addWidget(r1)
+                # Ligne 2 : magnitude / duree / latitude lunaire
+                details = []
                 if emag is not None:
-                    row_l.addWidget(_label(f"Mag {emag:.3f}",
-                                           color=Config.FG_LABEL))
-                row_l.addStretch()
-                row.setStyleSheet(f"background-color: {Config.BG_PANEL};"
-                                  " border-radius:4px; margin:2px;")
-                self._evt_layout.addWidget(row)
+                    details.append(f"Magnitude : {emag:.3f}")
+                if edur is not None:
+                    details.append(f"Dur\u00e9e centrale : ~{edur} min")
+                if elat is not None:
+                    details.append(f"Lat. Lune : {elat:+.2f}\u00b0")
+                if details:
+                    r2 = QWidget()
+                    r2_l = QHBoxLayout(r2)
+                    r2_l.setContentsMargins(0, 0, 0, 0)
+                    r2_l.setSpacing(20)
+                    for d in details:
+                        r2_l.addWidget(_label(d, color=Config.FG_LABEL))
+                    r2_l.addStretch()
+                    card_l.addWidget(r2)
+                self._evt_layout.addWidget(card)
         self._evt_layout.addStretch()
 
     # ── Conjonctions ─────────────────────────────────────────────────────────
@@ -1421,3 +1482,126 @@ class AstroApp(QMainWindow):
                                   " border-radius:4px; margin:2px;")
                 self._evt_layout.addWidget(row)
         self._evt_layout.addStretch()
+
+    # ── Stylesheet global ────────────────────────────────────────────────────
+    def _apply_styles(self):
+        """Theme visuel Catppuccin + support emoji via Segoe UI Emoji."""
+        BG  = Config.BG_MAIN
+        PNL = Config.BG_PANEL
+        FG  = Config.FG_WHITE
+        LBL = Config.FG_LABEL
+        ACC = Config.BTN_COLOR
+        GRD = Config.GRID_COLOR
+        RED = Config.FG_RED
+        qss = f"""
+* {{
+    font-family: 'Segoe UI', 'Segoe UI Emoji', 'Apple Color Emoji',
+                 'Noto Color Emoji', sans-serif;
+    font-size: 10pt; color: {FG};
+}}
+QMainWindow, QWidget {{ background-color: {BG}; }}
+QGroupBox {{
+    border: 1px solid {GRD}; border-radius: 6px;
+    margin-top: 12px; padding-top: 6px;
+    font-weight: bold; color: {ACC};
+}}
+QGroupBox::title {{
+    subcontrol-origin: margin; left: 10px;
+    padding: 0 6px; background-color: {BG};
+}}
+QPushButton {{
+    background-color: {PNL}; border: 1px solid {GRD};
+    border-radius: 5px; padding: 5px 14px;
+    color: {FG}; min-height: 28px;
+}}
+QPushButton:hover {{ background-color: {ACC}33; border-color: {ACC}; }}
+QPushButton:checked {{
+    background-color: {ACC}55; border-color: {ACC};
+    color: {FG}; font-weight: bold;
+}}
+QPushButton:pressed {{ background-color: {ACC}77; }}
+QLineEdit {{
+    background-color: {BG}; border: 1px solid {GRD};
+    border-radius: 4px; padding: 4px 8px; color: {FG};
+}}
+QLineEdit:focus {{ border-color: {ACC}; }}
+QComboBox {{
+    background-color: {BG}; border: 1px solid {GRD};
+    border-radius: 4px; padding: 4px 8px; color: {FG};
+}}
+QComboBox::drop-down {{ border: none; width: 20px; }}
+QComboBox QAbstractItemView {{
+    background-color: {PNL}; border: 1px solid {GRD}; color: {FG};
+    selection-background-color: {ACC}44;
+}}
+QTabWidget::pane {{
+    border: 1px solid {GRD}; border-top: none;
+    background-color: {PNL};
+}}
+QTabBar::tab {{
+    background: {BG}; color: {LBL};
+    padding: 7px 16px; border: 1px solid transparent;
+    border-bottom: none; margin-right: 2px;
+    border-radius: 4px 4px 0 0;
+}}
+QTabBar::tab:selected {{
+    background: {PNL}; color: {FG};
+    border-color: {GRD}; font-weight: bold;
+}}
+QTabBar::tab:hover:!selected {{ background: {PNL}88; color: {FG}; }}
+QScrollBar:vertical {{
+    background: {BG}; width: 7px; border-radius: 3px; margin: 0;
+}}
+QScrollBar::handle:vertical {{
+    background: {GRD}; border-radius: 3px; min-height: 24px;
+}}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+QScrollBar:horizontal {{
+    background: {BG}; height: 7px; border-radius: 3px; margin: 0;
+}}
+QScrollBar::handle:horizontal {{
+    background: {GRD}; border-radius: 3px; min-width: 24px;
+}}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}
+QStatusBar {{
+    background: {BG}; color: {LBL};
+    border-top: 1px solid {GRD}; padding: 2px 6px;
+}}
+QToolTip {{
+    background-color: {PNL}; color: {FG};
+    border: 1px solid {ACC}; padding: 4px 8px; border-radius: 4px;
+}}
+QSlider::groove:horizontal {{
+    background: {GRD}; height: 4px; border-radius: 2px;
+}}
+QSlider::handle:horizontal {{
+    background: {ACC}; width: 14px; height: 14px;
+    margin: -5px 0; border-radius: 7px;
+}}
+QSlider::sub-page:horizontal {{ background: {ACC}66; border-radius: 2px; }}
+QCheckBox::indicator {{
+    width: 16px; height: 16px; border-radius: 3px;
+    border: 1px solid {GRD}; background: {BG};
+}}
+QCheckBox::indicator:checked {{ background: {ACC}; border-color: {ACC}; }}
+QLabel {{ background: transparent; }}
+QScrollArea {{ border: none; background: transparent; }}
+"""
+        self.setStyleSheet(qss)
+        # Bouton CALCULER en couleur accent
+        if hasattr(self, 'btn_calc'):
+            self.btn_calc.setStyleSheet(
+                f"QPushButton {{ background-color:{ACC}; color:{BG}; "
+                f"font-weight:bold; border:none; border-radius:5px; "
+                f"min-height:32px; padding:6px 14px; }}"
+                f"QPushButton:hover {{ background-color:{ACC}cc; }}"
+                f"QPushButton:pressed {{ background-color:{ACC}88; }}")
+        # Bouton LIVE rouge quand actif
+        if hasattr(self, 'btn_live'):
+            self.btn_live.setStyleSheet(
+                f"QPushButton {{ background-color:{PNL}; color:{FG}; "
+                f"border:1px solid {GRD}; border-radius:5px; "
+                f"min-height:28px; padding:5px 14px; }}"
+                f"QPushButton:checked {{ background-color:{RED}44; "
+                f"border-color:{RED}; color:{FG}; font-weight:bold; }}"
+                f"QPushButton:hover {{ border-color:{RED}; }}")
