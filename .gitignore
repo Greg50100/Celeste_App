@@ -47,3 +47,8 @@ htmlcov/
 
 # ── Claude Code ───────────────────────────────────────────
 .claude/
+
+# ── Fichiers générés ──────────────────────────────────────
+# Éphémérides JPL/IMCCE (téléchargées à la demande) et PDF exportés
+*.bsp
+/*.pdf
