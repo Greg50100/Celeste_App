@@ -1,240 +1,226 @@
-# ✨ Céleste — Astronomical Observatory
+# ✨ Céleste — observatoire astronomique
 
-> Desktop application for calculating and visualising Sun, Moon and planetary positions, based on Jean Meeus's algorithms.
+> Application de bureau qui calcule et affiche la position du Soleil, de la Lune et des planètes, d'après les algorithmes de Jean Meeus.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![CustomTkinter](https://img.shields.io/badge/UI-CustomTkinter-blueviolet)
-![Matplotlib](https://img.shields.io/badge/Charts-Matplotlib-orange)
+![Matplotlib](https://img.shields.io/badge/Graphiques-Matplotlib-orange)
 ![Licence](https://img.shields.io/badge/Licence-MIT-green)
 ![CI](https://github.com/Greg50100/Celeste_App/actions/workflows/ci.yml/badge.svg)
 
+**Projet actif** · fait partie de la famille Ganymede : [site web](https://greg50100.github.io/personnal-site/) ·
+[application Android](https://github.com/Greg50100/Ganymede) · [Céleste pour Home Assistant](https://github.com/Greg50100/Celeste_HA)
+
 ---
 
-## Overview
+## Présentation
 
-Céleste calculates in real time — or for any given date — the astronomical positions of the Sun, Moon and four planets (Venus, Mars, Jupiter, Saturn), daily events (rise/set, twilights), lunar phases, eclipse predictions, conjunctions and oppositions. Results are displayed in a modern dark-theme interface with interactive charts and a sky map.
+Céleste calcule en temps réel — ou pour n'importe quelle date — la position du Soleil, de la Lune et de quatre planètes
+(Vénus, Mars, Jupiter, Saturne), les événements du jour (lever, coucher, crépuscules), les phases de la Lune, les éclipses,
+les conjonctions et les oppositions. Les résultats s'affichent dans une interface sombre avec des graphiques interactifs et
+une carte du ciel.
 
-**Core features:**
+**Fonctionnalités principales :**
 
-- **Instant positions** — Right Ascension, Declination, Altitude, Azimuth
-- **Daily events** — rise, set, culmination; civil (−6°), nautical (−12°) and astronomical (−18°) twilights
-- **Lunar phase** — illumination %, phase name and emoji
-- **Real-time mode** — automatic update every 2 s (configurable via settings)
-- **Auto-geolocation** — position detection via ip-api.com
-- **24 h trajectory chart** — altitude curves with interactive tooltip
-- **Polar sky map** — azimuthal projection with N/S/E/W orientation, 32+ named stars, constellation lines, planet markers
-- **Solar System tab** — positions of Venus, Mars, Jupiter and Saturn
-- **Eclipse predictions** — total / annular / hybrid type, diameter ratio, magnitude, central phase duration
-- **Conjunctions & oppositions** — upcoming planetary events
-- **Equation of time** — difference between apparent and mean solar time
-- **Favourites** — save/load named locations (37 cities pre-loaded)
-- **Timezone conversion** — UT → local time via UTC±N selector
-- **PDF export** — daily ephemeris export
-- **Multilingual UI** — English, French, Spanish, German (switchable via `--lang` or settings)
-- **Persistent settings** — theme, language, default place, units, live interval saved to `settings.json`
+- **Positions instantanées** — ascension droite, déclinaison, hauteur, azimut
+- **Événements du jour** — lever, coucher, culmination ; crépuscules civil (−6°), nautique (−12°) et astronomique (−18°)
+- **Phase de la Lune** — pourcentage éclairé, nom de la phase et émoji
+- **Mode temps réel** — mise à jour automatique toutes les 2 s (réglable)
+- **Géolocalisation automatique** — détection de la position via ip-api.com
+- **Trajectoire sur 24 h** — courbes de hauteur avec info-bulle interactive
+- **Carte du ciel polaire** — projection azimutale orientée N/S/E/O, plus de 32 étoiles nommées, constellations, planètes
+- **Onglet système solaire** — positions de Vénus, Mars, Jupiter et Saturne
+- **Prévision des éclipses** — type (totale, annulaire, hybride), rapport des diamètres, magnitude, durée de la phase centrale
+- **Conjonctions et oppositions** — prochains événements planétaires
+- **Équation du temps** — écart entre temps solaire vrai et temps solaire moyen
+- **Favoris** — enregistrement des lieux (37 villes préchargées)
+- **Fuseaux horaires** — conversion TU → heure locale par sélecteur UTC±N
+- **Export PDF** — éphémérides du jour
+- **Interface multilingue** — français, anglais, espagnol, allemand (`--lang` ou réglages)
+- **Réglages persistants** — thème, langue, lieu par défaut, unités, intervalle temps réel (`settings.json`)
 
 ---
 
 ## Installation
 
-### Requirements
-
-- Python 3.10 or higher
-- pip
-
-### Clone the repository
+Prérequis : Python 3.10 ou plus récent, et pip.
 
 ```bash
 git clone https://github.com/Greg50100/Celeste_App.git
 cd Celeste_App
-```
-
-### Install dependencies
-
-```bash
 pip install -r requirements.txt
-```
-
-### Run the application
-
-```bash
 python main.py
 ```
 
-### Language options
+Choix de la langue :
 
 ```bash
-python main.py --lang en   # English (default)
-python main.py --lang fr   # French
-python main.py --lang es   # Spanish
-python main.py --lang de   # German
+python main.py --lang fr   # français
+python main.py --lang en   # anglais (par défaut)
+python main.py --lang es   # espagnol
+python main.py --lang de   # allemand
 ```
 
 ---
 
-## Usage
+## Utilisation
 
-| Field | Description |
+| Champ | Description |
 |-------|-------------|
-| **Date & Time** | Format `DD/MM/YYYY HH:MM:SS` in Universal Time (UT) |
-| **Latitude** | Decimal degrees, positive = North (e.g. `48.85` for Paris) |
-| **Longitude** | Decimal degrees, positive = East (e.g. `2.35` for Paris) |
+| **Date et heure** | Format `JJ/MM/AAAA HH:MM:SS`, en temps universel (TU) |
+| **Latitude** | Degrés décimaux, positif = nord (ex. `48.85` pour Paris) |
+| **Longitude** | Degrés décimaux, positif = est (ex. `2.35` pour Paris) |
 
-**Buttons:**
+**Boutons :**
 
-- `GEOLOC` — Auto-fills latitude and longitude from your IP address
-- `⏱ LIVE` — Activates real-time mode (interval configurable in settings)
-- `CALCULATE` — Runs calculations for the entered date and coordinates
-- `🖨 EXPORT PDF` — Exports today's ephemeris to PDF
+- `GEOLOC` — remplit la latitude et la longitude à partir de l'adresse IP
+- `⏱ LIVE` — active le mode temps réel (intervalle réglable)
+- `CALCULATE` — lance les calculs pour la date et le lieu saisis
+- `🖨 EXPORT PDF` — exporte les éphémérides du jour en PDF
 
-**Charts:**
+**Graphiques :**
 
-- Hover over the 24 h curve to display the exact altitude at any hour
-- The polar chart places Zenith at centre and horizon at edge
-- Click a planet marker on the sky map for a detail popup
+- Survolez la courbe sur 24 h pour lire la hauteur exacte à toute heure
+- La carte polaire place le zénith au centre et l'horizon au bord
+- Cliquez sur une planète de la carte du ciel pour afficher sa fiche
 
 ---
 
 ## Architecture
 
-The project follows the **MVC (Model-View-Controller)** pattern:
+Le projet suit le modèle **MVC (modèle-vue-contrôleur)** :
 
 ```
 Celeste_App/
-├── main.py              # Entry point — i18n init, CTk window
-├── engine.py            # Model — pure astronomical calculations (MeeusEngine)
-├── gui.py               # View + Controller — interface and application logic
-├── utils.py             # Utilities — HMS/DMS formatting, lunar phase labels
-├── config.py            # Configuration — colour palette (Catppuccin Mocha theme)
-├── i18n.py              # Internationalisation — key-based translation with fallback
-├── settings.py          # Persistent user preferences (settings.json)
-├── constellations.py    # Star catalog extensions and constellation lines
-├── export_pdf.py        # PDF ephemeris export
-├── favorites.json       # Pre-loaded locations (37 cities)
-├── settings.json        # User preferences (auto-generated)
-├── locales/             # Translation files
-│   ├── fr.json          # French (reference locale / fallback)
-│   ├── en.json          # English
-│   ├── es.json          # Spanish
-│   └── de.json          # German
-├── requirements.txt     # Runtime dependencies
-├── requirements-dev.txt # Development dependencies (pytest)
-└── tests/
-    ├── test_engine.py   # MeeusEngine base algorithms
-    ├── test_engine_hp.py# VSOP87, ELP2000, eclipses, conjunctions
-    ├── test_i18n.py     # i18n module
-    └── test_utils.py    # Formatters (hms, dms, lunar_phase)
+├── main.py              # Point d'entrée — initialisation i18n, fenêtre CTk
+├── engine.py            # Modèle — calculs astronomiques purs (MeeusEngine)
+├── gui.py               # Vue + contrôleur — interface et logique applicative
+├── utils.py             # Utilitaires — formats HMS/DMS, noms des phases
+├── config.py            # Configuration — palette (thème Catppuccin Mocha)
+├── i18n.py              # Internationalisation — traductions par clé avec repli
+├── settings.py          # Préférences persistantes (settings.json)
+├── constellations.py    # Catalogue d'étoiles et tracés des constellations
+├── export_pdf.py        # Export PDF des éphémérides
+├── favorites.json       # Lieux préchargés (37 villes)
+├── settings.json        # Préférences (générées automatiquement)
+├── locales/             # Traductions (fr.json est la référence)
+├── scripts/             # Scripts annexes (fiche haute précision Skyfield/INPOP)
+├── requirements.txt     # Dépendances d'exécution
+├── requirements-dev.txt # Dépendances de développement (pytest)
+└── tests/               # Tests unitaires (moteur, i18n, utilitaires)
 ```
 
-### Model: `MeeusEngine`
+### Modèle : `MeeusEngine`
 
-Fully decoupled calculation engine. All methods are class methods or static methods — no internal state is preserved.
+Moteur de calcul entièrement découplé : uniquement des méthodes de classe ou statiques, sans état interne.
 
-| Method | Role |
-|--------|------|
-| `julian_day(dte)` | Julian Day (JD) |
-| `julian_century_j2000(dte)` | T in Julian centuries since J2000.0 |
-| `sun_position(t)` | Sun ecliptic longitude + distance — short series (~0.01°) |
-| `sun_position_hp(t)` | Sun position — VSOP87 truncated (~1″ arc) |
-| `moon_position(t)` | Moon longitude, latitude, parallax — Meeus ch.47 base series |
-| `moon_position_elp2000(t)` | Moon position — ELP2000-82B extended series (~10″ arc) |
-| `ecliptic_to_equatorial(l, b, t)` | Ecliptic → equatorial (RA, Dec) |
-| `equatorial_to_horizontal(jd, lat, lon, ra, dec)` | Equatorial → horizontal (Alt, Az) |
-| `elevation_correction(h, p)` | Atmospheric refraction + parallax |
-| `find_events(dte, lat, lon, body)` | Rise / set / culmination / twilights |
-| `planet_position(name, t)` | Heliocentric → geocentric position (Venus, Mars, Jupiter, Saturn) |
-| `equation_of_time(t)` | Equation of time in minutes |
-| `angular_separation(ra1, dec1, ra2, dec2)` | Angular separation between two bodies |
-| `find_conjunctions(year, body1, body2)` | Upcoming conjunctions / oppositions |
-| `find_eclipses(year)` | Solar eclipse predictions with type and magnitude |
+| Méthode | Rôle |
+|---------|------|
+| `julian_day(dte)` | Jour julien (JJ) |
+| `julian_century_j2000(dte)` | T en siècles juliens depuis J2000,0 |
+| `sun_position(t)` | Longitude écliptique et distance du Soleil — série courte (~0,01°) |
+| `sun_position_hp(t)` | Position du Soleil — VSOP87 tronquée (~1″) |
+| `moon_position(t)` | Longitude, latitude et parallaxe de la Lune — série de base (Meeus ch. 47) |
+| `moon_position_elp2000(t)` | Position de la Lune — séries ELP2000-82B étendues (~10″) |
+| `ecliptic_to_equatorial(l, b, t)` | Écliptique → équatorial (AD, Déc) |
+| `equatorial_to_horizontal(jd, lat, lon, ra, dec)` | Équatorial → horizontal (hauteur, azimut) |
+| `elevation_correction(h, p)` | Réfraction atmosphérique et parallaxe |
+| `find_events(dte, lat, lon, body)` | Lever, coucher, culmination, crépuscules |
+| `planet_position(name, t)` | Position héliocentrique → géocentrique (Vénus, Mars, Jupiter, Saturne) |
+| `equation_of_time(t)` | Équation du temps en minutes |
+| `angular_separation(ra1, dec1, ra2, dec2)` | Séparation angulaire entre deux astres |
+| `find_conjunctions(year, body1, body2)` | Prochaines conjonctions et oppositions |
+| `find_eclipses(year)` | Éclipses de Soleil, avec type et magnitude |
 
-### Cache optimisation
+### Cache
 
-The daily event calculation (1440 iterations × 2 bodies) is expensive. A cache keyed on `YYYY-MM-DD_lat_lon` avoids recalculation as long as date and coordinates do not change — particularly useful in real-time mode.
+Le calcul des événements du jour (1 440 itérations × 2 astres) est coûteux. Un cache indexé par `AAAA-MM-JJ_lat_lon`
+évite de le refaire tant que la date et le lieu ne changent pas, ce qui est précieux en mode temps réel.
 
 ---
 
-## Running the tests
+## Tests
 
 ```bash
 pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
-| File | Scope |
-|------|-------|
-| `test_engine.py` | Julian Day, Sun/Moon positions, coordinate transforms, event detection, planet positions |
-| `test_engine_hp.py` | VSOP87 Sun, ELP2000 Moon, equation of time, angular separation, conjunctions, eclipses |
-| `test_i18n.py` | Translation loading, fallback, language switching |
-| `test_utils.py` | HMS/DMS formatting (carry propagation), lunar phase labels and normalisation |
+| Fichier | Portée |
+|---------|--------|
+| `test_engine.py` | Jour julien, positions Soleil/Lune, changements de repère, événements, planètes |
+| `test_engine_hp.py` | Soleil VSOP87, Lune ELP2000, équation du temps, séparations, conjonctions, éclipses |
+| `test_i18n.py` | Chargement des traductions, repli, changement de langue |
+| `test_utils.py` | Formats HMS/DMS (retenues), noms et normalisation des phases |
 
 ---
 
-## Scientific references
+## Références scientifiques
 
-- **Jean Meeus**, *Astronomical Algorithms*, 2nd edition, Willmann-Bell, 1998.
-  - Chapter 7 — Julian Day
-  - Chapter 13 — Coordinate transforms
-  - Chapter 16 — Atmospheric refraction (Bennett's formula)
-  - Chapter 25 — Sun position (short series, ±0.01°)
-  - Chapter 28 — Equation of time
-  - Chapter 32 — Sun position VSOP87 (~1″)
-  - Chapter 47 — Moon position (base series ±0.01° + ELP2000-82B ±10″)
-  - Chapter 54 — Solar eclipse prediction
-
----
-
-## Dependencies
-
-| Package | Min. version | Role |
-|---------|-------------|------|
-| [customtkinter](https://github.com/TomSchimansky/CustomTkinter) | 5.2.2 | Modern dark-mode GUI |
-| [matplotlib](https://matplotlib.org/) | 3.10.8 | Interactive astronomical charts |
-
-`tkinter`, `urllib` and `json` are part of the Python standard library.
+- **Jean Meeus**, *Astronomical Algorithms*, 2e édition, Willmann-Bell, 1998.
+  - Chapitre 7 — Jour julien
+  - Chapitre 13 — Changements de coordonnées
+  - Chapitre 16 — Réfraction atmosphérique (formule de Bennett)
+  - Chapitre 25 — Position du Soleil (série courte, ±0,01°)
+  - Chapitre 28 — Équation du temps
+  - Chapitre 32 — Position du Soleil VSOP87 (~1″)
+  - Chapitre 47 — Position de la Lune (série de base ±0,01° + ELP2000-82B ±10″)
+  - Chapitre 54 — Prévision des éclipses de Soleil
 
 ---
 
-## Road map
+## Dépendances
 
-### Data & Calculations
+| Paquet | Version min. | Rôle |
+|--------|-------------|------|
+| [customtkinter](https://github.com/TomSchimansky/CustomTkinter) | 5.2.2 | Interface graphique sombre moderne |
+| [matplotlib](https://matplotlib.org/) | 3.10.8 | Graphiques astronomiques interactifs |
+| [reportlab](https://www.reportlab.com/) | 4.0 | Export PDF |
 
-- [x] Nautical (−12°) and astronomical (−18°) twilights
-- [x] **Solar System** — Venus, Mars, Jupiter, Saturn positions
-- [x] **Solar eclipses** — type, magnitude, central phase duration
-- [x] **Conjunctions & oppositions** — upcoming planetary events
-- [x] **Moon precision** — ELP2000-82B extended series (~10″ arc)
-- [x] **Equation of time**
-- [ ] **Orrery 2D** — animated planetary orbit visualisation
-- [ ] **Lunar eclipses** — extend eclipse detection to the Moon
+`tkinter`, `urllib` et `json` font partie de la bibliothèque standard de Python.
 
-### Interface & Visualisation
+---
 
-- [x] Main stars on sky map (32+, size proportional to magnitude)
-- [x] Constellation lines on polar chart
-- [x] Planet markers on sky map (tooltip + click popup)
-- [ ] **Twilight colours** — trajectory chart background coloured by phase of day
-- [ ] **Interactive sky map** — click a star to display its full data sheet
-- [ ] **Light theme** — toggle between Catppuccin Mocha (dark) and Latte (light)
+## Feuille de route
 
-### User Experience
+### Données et calculs
 
-- [x] Favourites — save/load named locations (`favorites.json`)
-- [x] Timezone conversion (UT → local time via UTC±N selector)
-- [x] **Data export** — daily ephemeris as PDF
-- [x] **Multilingual UI** — FR / EN / ES / DE switchable
-- [x] **Persistent settings** — language, theme, place, live interval (`settings.json`)
-- [ ] **Calculation history** — list of recent calculations, reloadable in one click
-- [ ] **Place search** — geocoding by city name
-- [ ] **Monthly lunar calendar** — month view with daily phase
+- [x] Crépuscules nautique (−12°) et astronomique (−18°)
+- [x] **Système solaire** — positions de Vénus, Mars, Jupiter et Saturne
+- [x] **Éclipses de Soleil** — type, magnitude, durée de la phase centrale
+- [x] **Conjonctions et oppositions** — prochains événements planétaires
+- [x] **Précision de la Lune** — séries ELP2000-82B étendues (~10″)
+- [x] **Équation du temps**
+- [ ] **Planétaire 2D** — orbites animées
+- [ ] **Éclipses de Lune** — étendre la détection à la Lune
 
-### Technical & Quality
+### Interface et visualisation
 
-- [x] **Unit tests** — pytest on `engine.py`, `utils.py` and `i18n.py` (4 files, ~90 cases)
-- [ ] **Executable packaging** — PyInstaller `.exe` (Windows) / `.app` (macOS)
+- [x] Étoiles principales sur la carte (32+, taille selon la magnitude)
+- [x] Tracés des constellations sur la carte polaire
+- [x] Planètes sur la carte du ciel (info-bulle et fiche au clic)
+- [ ] **Couleurs des crépuscules** — fond du graphique de trajectoire coloré selon le moment de la journée
+- [ ] **Carte du ciel interactive** — fiche complète d'une étoile au clic
+- [ ] **Thème clair** — bascule entre Catppuccin Mocha (sombre) et Latte (clair)
+
+### Confort d'utilisation
+
+- [x] Favoris — enregistrement des lieux (`favorites.json`)
+- [x] Fuseaux horaires (TU → heure locale par sélecteur UTC±N)
+- [x] **Export** — éphémérides du jour en PDF
+- [x] **Interface multilingue** — FR / EN / ES / DE
+- [x] **Réglages persistants** — langue, thème, lieu, intervalle temps réel (`settings.json`)
+- [ ] **Historique des calculs** — derniers calculs rechargeables en un clic
+- [ ] **Recherche de lieu** — géocodage par nom de ville
+- [ ] **Calendrier lunaire mensuel** — vue du mois avec la phase de chaque jour
+
+### Technique et qualité
+
+- [x] **Tests unitaires** — pytest sur `engine.py`, `utils.py` et `i18n.py` (4 fichiers, ~90 cas)
+- [ ] **Exécutable** — PyInstaller `.exe` (Windows) / `.app` (macOS)
 
 ---
 
 ## Licence
 
-This project is distributed under the MIT licence. See the `LICENSE` file for details.
+Projet distribué sous licence MIT : voir le fichier `LICENSE`.

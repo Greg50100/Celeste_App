@@ -1,3 +1,12 @@
+"""
+Fiche d'éphémérides haute précision pour une date et un lieu (export PDF).
+
+Script annexe, indépendant de l'application : il utilise Skyfield et l'éphéméride JPL DE421,
+que Skyfield télécharge automatiquement au premier lancement (de421.bsp, ~17 Mo).
+
+    pip install skyfield fpdf2
+    python scripts/fiche_haute_precision.py
+"""
 from skyfield.api import load, wgs84
 from skyfield import almanac
 from fpdf import FPDF
